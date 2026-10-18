@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "474991103602",
+    "project_id": "tilecalc-489b6",
+    "storage_bucket": "tilecalc-489b6.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:474991103602:android:ac3d1339df651a74c83ceb",
+        "android_client_info": {
+          "package_name": "com.example.tile_calc"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAc4l6oEFqGc42RVO0Wc-ZCd6-3IPCyhJo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
