@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import '../services/auth_service.dart';
 
 class HeaderAppBar extends StatelessWidget implements PreferredSizeWidget {
   final bool isDark;
@@ -176,6 +178,139 @@ class HeaderAppBar extends StatelessWidget implements PreferredSizeWidget {
                         ],
                       ),
                     ),
+                  ),
+                  const SizedBox(width: 8),
+                  // Google Sign In / User Profile Button
+                  StreamBuilder<User?>(
+                    stream: AuthService().authStateChanges,
+                    builder: (context, snapshot) {
+                      final user = snapshot.data;
+                      if (user != null) {
+                        return InkWell(
+                          onTap: () {
+                            showDialog(
+                              context: context,
+                              builder: (ctx) => AlertDialog(
+                                backgroundColor: isDark
+                                    ? const Color(0xFF0F172A)
+                                    : Colors.white,
+                                title: const Text('Google Account'),
+                                content: Column(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    CircleAvatar(
+                                      radius: 30,
+                                      backgroundImage: user.photoURL != null
+                                          ? NetworkImage(user.photoURL!)
+                                          : null,
+                                      child: user.photoURL == null
+                                          ? Text(
+                                              user.displayName?[0] ?? 'U',
+                                              style: const TextStyle(
+                                                  fontSize: 20),
+                                            )
+                                          : null,
+                                    ),
+                                    const SizedBox(height: 12),
+                                    Text(
+                                      user.displayName ?? 'User',
+                                      style: const TextStyle(
+                                          fontWeight: FontWeight.bold),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      user.email ?? '',
+                                      style: const TextStyle(
+                                          fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () {
+                                      AuthService().signOut();
+                                      Navigator.pop(ctx);
+                                    },
+                                    child: const Text(
+                                      'Sign Out',
+                                      style: TextStyle(color: Colors.red),
+                                    ),
+                                  ),
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(ctx),
+                                    child: const Text('Close'),
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.all(3),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF1E293B)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFF16A34A),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: CircleAvatar(
+                              radius: 14,
+                              backgroundImage: user.photoURL != null
+                                  ? NetworkImage(user.photoURL!)
+                                  : null,
+                              child: user.photoURL == null
+                                  ? Text(
+                                      user.displayName?[0] ?? 'U',
+                                      style: const TextStyle(
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.bold),
+                                    )
+                                  : null,
+                            ),
+                          ),
+                        );
+                      } else {
+                        return InkWell(
+                          onTap: () async {
+                            await AuthService().signInWithGoogle();
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 10, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: isDark
+                                  ? const Color(0xFF1E293B)
+                                  : const Color(0xFFF1F5F9),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: isDark
+                                    ? const Color(0xFF334155)
+                                    : const Color(0xFFCBD5E1),
+                              ),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: const [
+                                Icon(Icons.login_rounded,
+                                    size: 15, color: Color(0xFF16A34A)),
+                                SizedBox(width: 5),
+                                Text(
+                                  'Sign In',
+                                  style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.bold),
+                                ),
+                              ],
+                            ),
+                          ),
+                        );
+                      }
+                    },
                   ),
                   const SizedBox(width: 8),
                   // Dark Mode Toggle Button
