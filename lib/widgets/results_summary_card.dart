@@ -9,6 +9,7 @@ class ResultsSummaryCard extends StatelessWidget {
   final int totalTilesNeeded;
   final double areaWithWaste;
   final double netArea;
+  final double singleTileArea;
   final double boxCoverage;
   final VoidCallback onCopySummary;
 
@@ -22,6 +23,7 @@ class ResultsSummaryCard extends StatelessWidget {
     required this.totalTilesNeeded,
     required this.areaWithWaste,
     required this.netArea,
+    required this.singleTileArea,
     required this.boxCoverage,
     required this.onCopySummary,
   });
@@ -233,7 +235,7 @@ class ResultsSummaryCard extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Secondary Metrics Grid
+          // Secondary Metrics Grid (6 items)
           GridView.count(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
@@ -243,9 +245,9 @@ class ResultsSummaryCard extends StatelessWidget {
             childAspectRatio: 2.2,
             children: [
               _buildMetricTile(
-                'Total Tiles Needed',
-                '$totalTilesNeeded',
-                'pcs',
+                'Net Surface Area',
+                netArea.toStringAsFixed(2),
+                'm²',
               ),
               _buildMetricTile(
                 'Area with Waste',
@@ -253,13 +255,23 @@ class ResultsSummaryCard extends StatelessWidget {
                 'm²',
               ),
               _buildMetricTile(
-                'Net Surface Area',
-                netArea.toStringAsFixed(2),
+                'Total Tiles Needed',
+                '$totalTilesNeeded',
+                'pcs',
+              ),
+              _buildMetricTile(
+                'Area of One Box',
+                boxCoverage.toStringAsFixed(2),
                 'm²',
               ),
               _buildMetricTile(
-                'Coverage / Box',
-                boxCoverage.toStringAsFixed(2),
+                'Total Tiles Area',
+                (totalTilesNeeded * singleTileArea).toStringAsFixed(2),
+                'm²',
+              ),
+              _buildMetricTile(
+                'Single Tile Area',
+                singleTileArea.toStringAsFixed(2),
                 'm²',
               ),
             ],

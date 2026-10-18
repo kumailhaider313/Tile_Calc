@@ -506,6 +506,7 @@ Tile Calculation Summary:
           totalTilesNeeded: totalTilesNeeded,
           areaWithWaste: areaWithWaste,
           netArea: netArea,
+          singleTileArea: singleTileArea,
           boxCoverage: boxCoverage,
           onCopySummary: _copySummary,
         ),
