@@ -1,57 +1,28 @@
 import 'package:flutter/material.dart';
+import '../models/room_area_item.dart';
 import '../models/exclusion_item.dart';
 import 'common_input_field.dart';
 
 class AreaInputSection extends StatelessWidget {
   final bool isDark;
-  final String areaMode;
-  final ValueChanged<String> onAreaModeChanged;
-
-  final TextEditingController roomLengthController;
-  final TextEditingController roomWidthController;
-  final TextEditingController directAreaController;
-
-  final String unitLength;
-  final ValueChanged<String?> onUnitLengthChanged;
-  final String unitWidth;
-  final ValueChanged<String?> onUnitWidthChanged;
-  final String unitDirectArea;
-  final ValueChanged<String?> onUnitDirectAreaChanged;
-
-  final List<ExclusionItem> exclusions;
-  final VoidCallback onAddExclusion;
-  final ValueChanged<int> onRemoveExclusion;
-  final Function(ExclusionItem item, String? val) onExclusionUnitChanged;
-
-  final double grossArea;
-  final double totalExclusionAreaM2;
-  final double netArea;
-  final double roomLengthM;
-  final double roomWidthM;
+  final List<RoomAreaItem> rooms;
+  final int selectedRoomIndex;
+  final ValueChanged<int> onRoomSelected;
+  final VoidCallback onAddRoom;
+  final ValueChanged<int> onDeleteRoom;
+  final RoomAreaItem activeRoom;
+  final VoidCallback onStateChanged;
 
   const AreaInputSection({
     super.key,
     required this.isDark,
-    required this.areaMode,
-    required this.onAreaModeChanged,
-    required this.roomLengthController,
-    required this.roomWidthController,
-    required this.directAreaController,
-    required this.unitLength,
-    required this.onUnitLengthChanged,
-    required this.unitWidth,
-    required this.onUnitWidthChanged,
-    required this.unitDirectArea,
-    required this.onUnitDirectAreaChanged,
-    required this.exclusions,
-    required this.onAddExclusion,
-    required this.onRemoveExclusion,
-    required this.onExclusionUnitChanged,
-    required this.grossArea,
-    required this.totalExclusionAreaM2,
-    required this.netArea,
-    required this.roomLengthM,
-    required this.roomWidthM,
+    required this.rooms,
+    required this.selectedRoomIndex,
+    required this.onRoomSelected,
+    required this.onAddRoom,
+    required this.onDeleteRoom,
+    required this.activeRoom,
+    required this.onStateChanged,
   });
 
   @override
@@ -71,55 +42,314 @@ class AreaInputSection extends StatelessWidget {
           children: [
             buildTabButton(
               title: 'Room Dimensions',
-              isActive: areaMode == 'dimensions',
+              isActive: activeRoom.areaMode == 'dimensions',
               isDark: isDark,
-              onTap: () => onAreaModeChanged('dimensions'),
+              onTap: () {
+                activeRoom.areaMode = 'dimensions';
+                onStateChanged();
+              },
             ),
             buildTabButton(
               title: 'Direct Area',
-              isActive: areaMode == 'direct',
+              isActive: activeRoom.areaMode == 'direct',
               isDark: isDark,
-              onTap: () => onAreaModeChanged('direct'),
+              onTap: () {
+                activeRoom.areaMode = 'direct';
+                onStateChanged();
+              },
             ),
           ],
         ),
       ),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          areaMode == 'dimensions'
+          // Room / Area Tabs Row with Add (+) Button
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                // Add Room Button (+)
+                InkWell(
+                  onTap: onAddRoom,
+                  borderRadius: BorderRadius.circular(10),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 12, vertical: 7),
+                    margin: const EdgeInsets.only(right: 8),
+                    decoration: BoxDecoration(
+                      color: isDark
+                          ? const Color(0xFF064E3B)
+                          : const Color(0xFFDCFCE7),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(
+                        color: isDark
+                            ? const Color(0xFF10B981)
+                            : const Color(0xFF16A34A),
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(
+                          Icons.add_rounded,
+                          size: 16,
+                          color: isDark
+                              ? const Color(0xFF34D399)
+                              : const Color(0xFF15803D),
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'Add Area (+)',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                            color: isDark
+                                ? const Color(0xFF34D399)
+                                : const Color(0xFF15803D),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                // List of Room Tabs
+                ...List.generate(rooms.length, (index) {
+                  final room = rooms[index];
+                  final isSelected = index == selectedRoomIndex;
+                  return Container(
+                    margin: const EdgeInsets.only(right: 6),
+                    child: Material(
+                      color: Colors.transparent,
+                      child: InkWell(
+                        onTap: () => onRoomSelected(index),
+                        borderRadius: BorderRadius.circular(10),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 7),
+                          decoration: BoxDecoration(
+                            color: isSelected
+                                ? const Color(0xFF16A34A)
+                                : (isDark
+                                    ? const Color(0xFF1E293B)
+                                    : const Color(0xFFF1F5F9)),
+                            borderRadius: BorderRadius.circular(10),
+                            border: Border.all(
+                              color: isSelected
+                                  ? const Color(0xFF16A34A)
+                                  : (isDark
+                                      ? const Color(0xFF334155)
+                                      : const Color(0xFFCBD5E1)),
+                            ),
+                          ),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Text(
+                                room.name,
+                                style: TextStyle(
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.bold,
+                                  color: isSelected
+                                      ? Colors.white
+                                      : (isDark
+                                          ? const Color(0xFFCBD5E1)
+                                          : const Color(0xFF475569)),
+                                ),
+                              ),
+                              if (rooms.length > 1) ...[
+                                const SizedBox(width: 6),
+                                InkWell(
+                                  onTap: () => onDeleteRoom(index),
+                                  child: Icon(
+                                    Icons.close_rounded,
+                                    size: 14,
+                                    color: isSelected
+                                        ? Colors.white70
+                                        : (isDark
+                                            ? const Color(0xFF94A3B8)
+                                            : const Color(0xFF64748B)),
+                                  ),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+
+          const SizedBox(height: 14),
+          Divider(
+            color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+          ),
+          const SizedBox(height: 14),
+
+          // Active Room Inputs
+          activeRoom.areaMode == 'dimensions'
               ? Row(
                   children: [
                     Expanded(
                       child: buildInputFieldWithUnit(
                         isDark: isDark,
-                        label: 'Room Length',
-                        controller: roomLengthController,
-                        unitValue: unitLength,
+                        label: '${activeRoom.name} Length',
+                        controller: activeRoom.lengthController,
+                        unitValue: activeRoom.unitLength,
                         unitOptions: const ['m', 'cm', 'ft', 'in'],
-                        onUnitChanged: onUnitLengthChanged,
+                        onUnitChanged: (val) {
+                          if (val != null) {
+                            activeRoom.unitLength = val;
+                            activeRoom.unitWidth = val;
+                            onStateChanged();
+                          }
+                        },
                       ),
                     ),
                     const SizedBox(width: 12),
                     Expanded(
                       child: buildInputFieldWithUnit(
                         isDark: isDark,
-                        label: 'Room Width',
-                        controller: roomWidthController,
-                        unitValue: unitWidth,
+                        label: '${activeRoom.name} Width',
+                        controller: activeRoom.widthController,
+                        unitValue: activeRoom.unitWidth,
                         unitOptions: const ['m', 'cm', 'ft', 'in'],
-                        onUnitChanged: onUnitWidthChanged,
+                        onUnitChanged: (val) {
+                          if (val != null) {
+                            activeRoom.unitWidth = val;
+                            activeRoom.unitLength = val;
+                            onStateChanged();
+                          }
+                        },
                       ),
                     ),
                   ],
                 )
               : buildInputFieldWithUnit(
                   isDark: isDark,
-                  label: 'Total Surface Area',
-                  controller: directAreaController,
-                  unitValue: unitDirectArea,
+                  label: '${activeRoom.name} Total Surface Area',
+                  controller: activeRoom.directAreaController,
+                  unitValue: activeRoom.unitDirectArea,
                   unitOptions: const ['m²', 'cm²', 'sq ft', 'sq in'],
-                  onUnitChanged: onUnitDirectAreaChanged,
+                  onUnitChanged: (val) {
+                    if (val != null) {
+                      activeRoom.unitDirectArea = val;
+                      onStateChanged();
+                    }
+                  },
                 ),
+
+          // Tile Skirting (Only shown in Floor tab)
+          if (activeRoom.name.toLowerCase() == 'floor') ...[
+            const SizedBox(height: 12),
+            Divider(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Icon(
+                  Icons.border_bottom_rounded,
+                  size: 16,
+                  color: isDark
+                      ? const Color(0xFF94A3B8)
+                      : const Color(0xFF64748B),
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  'Floor Tile Skirting',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                    color: isDark
+                        ? const Color(0xFFCBD5E1)
+                        : const Color(0xFF475569),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 10),
+            Row(
+              children: [
+                Text(
+                  'Skirting Height:',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w600,
+                    color: isDark
+                        ? const Color(0xFF94A3B8)
+                        : const Color(0xFF64748B),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                ...[0, 4, 6].map((h) {
+                  final isSelected = activeRoom.skirtingHeightInches == h;
+                  return Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: GestureDetector(
+                      onTap: () {
+                        activeRoom.skirtingHeightInches = h;
+                        onStateChanged();
+                      },
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 6),
+                        decoration: BoxDecoration(
+                          color: isSelected
+                              ? (isDark
+                                  ? const Color(0xFF064E3B)
+                                  : const Color(0xFFDCFCE7))
+                              : (isDark
+                                  ? const Color(0xFF1E293B)
+                                  : const Color(0xFFF1F5F9)),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: isSelected
+                                ? const Color(0xFF16A34A)
+                                : Colors.transparent,
+                          ),
+                        ),
+                        child: Text(
+                          '$h inch',
+                          style: TextStyle(
+                            fontSize: 11,
+                            fontWeight:
+                                isSelected ? FontWeight.bold : FontWeight.w500,
+                            color: isSelected
+                                ? (isDark
+                                    ? const Color(0xFF34D399)
+                                    : const Color(0xFF15803D))
+                                : (isDark
+                                    ? const Color(0xFFCBD5E1)
+                                    : const Color(0xFF475569)),
+                          ),
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+            if (activeRoom.skirtingHeightInches > 0) ...[
+              const SizedBox(height: 10),
+              buildInputFieldWithUnit(
+                isDark: isDark,
+                label: 'Skirting Cutout (Doors / Openings)',
+                controller: activeRoom.skirtingCutoutController,
+                unitValue: activeRoom.skirtingCutoutUnit,
+                unitOptions: const ['ft', 'm', 'cm', 'in'],
+                onUnitChanged: (val) {
+                  if (val != null) {
+                    activeRoom.skirtingCutoutUnit = val;
+                    onStateChanged();
+                  }
+                },
+              ),
+            ],
+          ],
 
           const SizedBox(height: 12),
           Divider(
@@ -127,7 +357,7 @@ class AreaInputSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Deductions / Exclusions Section Header
+          // Deductions / Exclusions Header
           LayoutBuilder(
             builder: (context, constraints) {
               final isNarrow = constraints.maxWidth < 450;
@@ -147,7 +377,7 @@ class AreaInputSection extends StatelessWidget {
                             const SizedBox(width: 6),
                             Expanded(
                               child: Text(
-                                'Deductions / Exclusions (Windows, Doors)',
+                                '${activeRoom.name} Cutouts (Doors, Windows)',
                                 style: TextStyle(
                                   fontSize: 11,
                                   fontWeight: FontWeight.bold,
@@ -163,7 +393,24 @@ class AreaInputSection extends StatelessWidget {
                         Align(
                           alignment: Alignment.centerRight,
                           child: InkWell(
-                            onTap: onAddExclusion,
+                            onTap: () {
+                              final wC = TextEditingController(text: '0.0');
+                              final hC = TextEditingController(text: '0.0');
+                              wC.addListener(onStateChanged);
+                              hC.addListener(onStateChanged);
+                              activeRoom.exclusions.add(
+                                ExclusionItem(
+                                  id: DateTime.now()
+                                      .microsecondsSinceEpoch
+                                      .toString(),
+                                  widthController: wC,
+                                  heightController: hC,
+                                  unitWidth: activeRoom.unitWidth,
+                                  unitHeight: activeRoom.unitWidth,
+                                ),
+                              );
+                              onStateChanged();
+                            },
                             borderRadius: BorderRadius.circular(8),
                             child: Container(
                               padding: const EdgeInsets.symmetric(
@@ -223,7 +470,7 @@ class AreaInputSection extends StatelessWidget {
                             ),
                             const SizedBox(width: 6),
                             Text(
-                              'Deductions / Exclusions (Windows, Doors)',
+                              '${activeRoom.name} Cutouts (Doors, Windows)',
                               style: TextStyle(
                                 fontSize: 12,
                                 fontWeight: FontWeight.bold,
@@ -235,7 +482,24 @@ class AreaInputSection extends StatelessWidget {
                           ],
                         ),
                         InkWell(
-                          onTap: onAddExclusion,
+                          onTap: () {
+                            final wC = TextEditingController(text: '0.0');
+                            final hC = TextEditingController(text: '0.0');
+                            wC.addListener(onStateChanged);
+                            hC.addListener(onStateChanged);
+                            activeRoom.exclusions.add(
+                              ExclusionItem(
+                                id: DateTime.now()
+                                    .microsecondsSinceEpoch
+                                    .toString(),
+                                widthController: wC,
+                                heightController: hC,
+                                unitWidth: activeRoom.unitWidth,
+                                unitHeight: activeRoom.unitWidth,
+                              ),
+                            );
+                            onStateChanged();
+                          },
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
                             padding: const EdgeInsets.symmetric(
@@ -285,10 +549,10 @@ class AreaInputSection extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Render List of Dynamic Exclusion Items
+          // Exclusions List for Active Room
           Column(
-            children: List.generate(exclusions.length, (index) {
-              final item = exclusions[index];
+            children: List.generate(activeRoom.exclusions.length, (index) {
+              final item = activeRoom.exclusions[index];
               return Padding(
                 padding: const EdgeInsets.only(bottom: 10),
                 child: Row(
@@ -297,38 +561,56 @@ class AreaInputSection extends StatelessWidget {
                     Expanded(
                       child: buildInputFieldWithUnit(
                         isDark: isDark,
-                        label: exclusions.length > 1
+                        label: activeRoom.exclusions.length > 1
                             ? 'Cutout #${index + 1} Width'
                             : 'Exclusion Width',
                         controller: item.widthController,
                         unitValue: item.unitWidth,
                         unitOptions: const ['m', 'cm', 'ft', 'in'],
-                        onUnitChanged: (val) =>
-                            onExclusionUnitChanged(item, val),
+                        onUnitChanged: (val) {
+                          if (val != null) {
+                            item.unitWidth = val;
+                            item.unitHeight = val;
+                            onStateChanged();
+                          }
+                        },
                       ),
                     ),
                     const SizedBox(width: 10),
                     Expanded(
                       child: buildInputFieldWithUnit(
                         isDark: isDark,
-                        label: exclusions.length > 1
+                        label: activeRoom.exclusions.length > 1
                             ? 'Cutout #${index + 1} Height'
                             : 'Exclusion Height',
                         controller: item.heightController,
                         unitValue: item.unitHeight,
                         unitOptions: const ['m', 'cm', 'ft', 'in'],
-                        onUnitChanged: (val) =>
-                            onExclusionUnitChanged(item, val),
+                        onUnitChanged: (val) {
+                          if (val != null) {
+                            item.unitHeight = val;
+                            item.unitWidth = val;
+                            onStateChanged();
+                          }
+                        },
                       ),
                     ),
-                    if (exclusions.length > 1 ||
+                    if (activeRoom.exclusions.length > 1 ||
                         item.width > 0 ||
                         item.height > 0) ...[
                       const SizedBox(width: 6),
                       Padding(
                         padding: const EdgeInsets.only(bottom: 2),
                         child: IconButton(
-                          onPressed: () => onRemoveExclusion(index),
+                          onPressed: () {
+                            setStateSafely() {
+                              final rem = activeRoom.exclusions.removeAt(index);
+                              rem.dispose();
+                              onStateChanged();
+                            }
+
+                            setStateSafely();
+                          },
                           icon: const Icon(
                             Icons.remove_circle_outline_rounded,
                           ),
@@ -348,7 +630,7 @@ class AreaInputSection extends StatelessWidget {
 
           const SizedBox(height: 12),
 
-          // Highlighted Green Box showing Net Area in Meters (m²)
+          // Total Calculated Area Box (Summing all rooms or active room net area)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(
@@ -396,7 +678,7 @@ class AreaInputSection extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'TOTAL CALCULATED AREA (IN METERS)',
+                        'TOTAL PROJECT NET AREA (${rooms.length > 1 ? '${rooms.length} Areas' : activeRoom.name})',
                         style: TextStyle(
                           fontSize: 10,
                           fontWeight: FontWeight.bold,
@@ -412,7 +694,7 @@ class AreaInputSection extends StatelessWidget {
                         textBaseline: TextBaseline.alphabetic,
                         children: [
                           Text(
-                            netArea.toStringAsFixed(2),
+                            activeRoom.netArea.toStringAsFixed(2),
                             style: TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.w900,
@@ -432,38 +714,22 @@ class AreaInputSection extends StatelessWidget {
                                   : const Color(0xFF16A34A),
                             ),
                           ),
-                          if (totalExclusionAreaM2 > 0) ...[
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                '(Gross: ${grossArea.toStringAsFixed(2)}m² - Cutouts: ${totalExclusionAreaM2.toStringAsFixed(2)}m²)',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? const Color(0xFFA7F3D0)
-                                      : const Color(0xFF15803D),
-                                ),
-                                overflow: TextOverflow.ellipsis,
+                          const SizedBox(width: 8),
+                          Flexible(
+                            child: Text(
+                              activeRoom.areaMode == 'dimensions'
+                                  ? '(${activeRoom.lengthM.toStringAsFixed(2)}m × ${activeRoom.widthM.toStringAsFixed(2)}m)'
+                                  : '(Direct Area)',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w600,
+                                color: isDark
+                                    ? const Color(0xFFA7F3D0)
+                                    : const Color(0xFF15803D),
                               ),
+                              overflow: TextOverflow.ellipsis,
                             ),
-                          ] else if (areaMode == 'dimensions' &&
-                              (unitLength != 'm' || unitWidth != 'm')) ...[
-                            const SizedBox(width: 8),
-                            Flexible(
-                              child: Text(
-                                '(${roomLengthM.toStringAsFixed(2)}m × ${roomWidthM.toStringAsFixed(2)}m)',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w600,
-                                  color: isDark
-                                      ? const Color(0xFFA7F3D0)
-                                      : const Color(0xFF15803D),
-                                ),
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                          ],
+                          ),
                         ],
                       ),
                     ],

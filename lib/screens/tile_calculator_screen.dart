@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../models/exclusion_item.dart';
+import '../models/room_area_item.dart';
 import '../widgets/area_input_section.dart';
 import '../widgets/header_app_bar.dart';
 import '../widgets/layout_preview_card.dart';
@@ -26,7 +27,6 @@ class TileCalculatorScreen extends StatefulWidget {
 
 class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
   String _selectedCurrency = 'PKR';
-  String _areaMode = 'dimensions'; // 'dimensions' or 'direct'
 
   final Map<String, String> _currencySymbols = {
     'USD': '\$',
@@ -36,64 +36,152 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
     'INR': '₹',
   };
 
-  // Text Editing Controllers
-  late TextEditingController _roomLengthController;
-  late TextEditingController _roomWidthController;
-  late TextEditingController _directAreaController;
+  // Multi-Room / Multi-Area list
+  final List<RoomAreaItem> _rooms = [];
+  int _selectedRoomIndex = 0;
+
+  RoomAreaItem get activeRoom =>
+      _rooms.isNotEmpty ? _rooms[_selectedRoomIndex] : _rooms.first;
+
+  // Tile & Pricing Controllers
   late TextEditingController _tileLengthController;
   late TextEditingController _tileWidthController;
   late TextEditingController _tilesPerBoxController;
   late TextEditingController _groutGapController;
   late TextEditingController _costPerBoxController;
 
-  String _unitLength = 'ft'; // 'm', 'cm', 'ft', 'in'
-  String _unitWidth = 'ft'; // 'm', 'cm', 'ft', 'in'
-  String _unitDirectArea = 'm²'; // 'm²', 'cm²', 'sq ft', 'sq in'
-
   String _unitTileL = 'cm';
   String _unitTileW = 'cm';
   String _costPricingMode = 'per Box'; // 'per Box', 'per Tile', 'per m²'
   double _wastePercentage = 0.0;
 
-  // Dynamic Exclusions (Windows, Doors)
-  final List<ExclusionItem> _exclusions = [];
-
-  void _addExclusionItem() {
-    final wController = TextEditingController(text: '0.0');
-    final hController = TextEditingController(text: '0.0');
+  void _addNewRoom(String name,
+      [String defaultL = '6.0', String defaultW = '5.0']) {
+    final lController = TextEditingController(text: defaultL);
+    final wController = TextEditingController(text: defaultW);
+    final dController = TextEditingController(text: '20.0');
+    lController.addListener(_onInputChange);
     wController.addListener(_onInputChange);
-    hController.addListener(_onInputChange);
+    dController.addListener(_onInputChange);
 
-    final initialUnit =
-        _exclusions.isNotEmpty ? _exclusions.last.unitWidth : 'ft';
+    final wExController = TextEditingController(text: '0.0');
+    final hExController = TextEditingController(text: '0.0');
+    wExController.addListener(_onInputChange);
+    hExController.addListener(_onInputChange);
+
+    final exclusion = ExclusionItem(
+      id: DateTime.now().microsecondsSinceEpoch.toString(),
+      widthController: wExController,
+      heightController: hExController,
+      unitWidth: 'ft',
+      unitHeight: 'ft',
+    );
+
+    final skirtingCutoutC = TextEditingController(text: '0.0');
+    skirtingCutoutC.addListener(_onInputChange);
 
     setState(() {
-      _exclusions.add(
-        ExclusionItem(
+      _rooms.add(
+        RoomAreaItem(
           id: DateTime.now().microsecondsSinceEpoch.toString(),
+          name: name,
+          lengthController: lController,
           widthController: wController,
-          heightController: hController,
-          unitWidth: initialUnit,
-          unitHeight: initialUnit,
+          directAreaController: dController,
+          unitLength: 'ft',
+          unitWidth: 'ft',
+          exclusions: [exclusion],
+          skirtingHeightInches: 4,
+          skirtingCutoutController: skirtingCutoutC,
+          skirtingCutoutUnit: 'ft',
         ),
       );
+      _selectedRoomIndex = _rooms.length - 1;
     });
   }
 
-  void _removeExclusionItem(int index) {
-    if (_exclusions.isEmpty) return;
+  void _showAddRoomDialog() {
+    final nameController = TextEditingController(text: 'Bathroom');
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor:
+            widget.isDarkMode ? const Color(0xFF0F172A) : Colors.white,
+        title: const Text('Add Area / Room'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Enter room or area name:',
+                style: TextStyle(fontSize: 13)),
+            const SizedBox(height: 10),
+            TextField(
+              controller: nameController,
+              autofocus: true,
+              decoration: InputDecoration(
+                hintText: 'e.g. Bathroom, Kitchen, Living Room',
+                border:
+                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: [
+                'Bathroom',
+                'Kitchen',
+                'Bedroom',
+                'Living Room',
+                'Balcony',
+                'Corridor'
+              ].map((suggestion) {
+                return ActionChip(
+                  label: Text(suggestion, style: const TextStyle(fontSize: 11)),
+                  onPressed: () {
+                    nameController.text = suggestion;
+                  },
+                );
+              }).toList(),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFF16A34A)),
+            onPressed: () {
+              final name = nameController.text.trim();
+              if (name.isNotEmpty) {
+                _addNewRoom(name);
+              }
+              Navigator.pop(ctx);
+            },
+            child: const Text('Add', style: TextStyle(color: Colors.white)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _removeRoom(int index) {
+    if (_rooms.length <= 1) return;
     setState(() {
-      final item = _exclusions.removeAt(index);
-      item.dispose();
+      final removed = _rooms.removeAt(index);
+      removed.dispose();
+      if (_selectedRoomIndex >= _rooms.length) {
+        _selectedRoomIndex = _rooms.length - 1;
+      }
     });
   }
 
   @override
   void initState() {
     super.initState();
-    _roomLengthController = TextEditingController(text: '6.0');
-    _roomWidthController = TextEditingController(text: '5.0');
-    _directAreaController = TextEditingController(text: '20.0');
     _tileLengthController = TextEditingController(text: '60');
     _tileWidthController = TextEditingController(text: '60');
     _tilesPerBoxController = TextEditingController(text: '4');
@@ -101,31 +189,25 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
     _costPerBoxController = TextEditingController(text: '35.00');
 
     // Add listeners for auto calculation
-    _roomLengthController.addListener(_onInputChange);
-    _roomWidthController.addListener(_onInputChange);
-    _directAreaController.addListener(_onInputChange);
     _tileLengthController.addListener(_onInputChange);
     _tileWidthController.addListener(_onInputChange);
     _tilesPerBoxController.addListener(_onInputChange);
     _groutGapController.addListener(_onInputChange);
     _costPerBoxController.addListener(_onInputChange);
 
-    // Initialize with 1 exclusion item
-    _addExclusionItem();
+    // Initialize with default Floor room
+    _addNewRoom('Floor', '6.0', '5.0');
   }
 
   @override
   void dispose() {
-    _roomLengthController.dispose();
-    _roomWidthController.dispose();
-    _directAreaController.dispose();
     _tileLengthController.dispose();
     _tileWidthController.dispose();
     _tilesPerBoxController.dispose();
     _groutGapController.dispose();
     _costPerBoxController.dispose();
-    for (final item in _exclusions) {
-      item.dispose();
+    for (final room in _rooms) {
+      room.dispose();
     }
     super.dispose();
   }
@@ -135,79 +217,47 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
   }
 
   // Raw values from inputs
-  double get roomLength => double.tryParse(_roomLengthController.text) ?? 0.0;
-  double get roomWidth => double.tryParse(_roomWidthController.text) ?? 0.0;
-  double get directArea => double.tryParse(_directAreaController.text) ?? 0.0;
   double get tileLength => double.tryParse(_tileLengthController.text) ?? 0.0;
   double get tileWidth => double.tryParse(_tileWidthController.text) ?? 0.0;
   int get tilesPerBox => int.tryParse(_tilesPerBoxController.text) ?? 1;
   double get costPerBox => double.tryParse(_costPerBoxController.text) ?? 0.0;
 
-  // Length & Width converted to meters
-  double get roomLengthM {
-    switch (_unitLength) {
-      case 'cm':
-        return roomLength / 100.0;
-      case 'ft':
-        return roomLength * 0.3048;
-      case 'in':
-        return roomLength * 0.0254;
-      case 'm':
-      default:
-        return roomLength;
-    }
-  }
-
-  double get roomWidthM {
-    switch (_unitWidth) {
-      case 'cm':
-        return roomWidth / 100.0;
-      case 'ft':
-        return roomWidth * 0.3048;
-      case 'in':
-        return roomWidth * 0.0254;
-      case 'm':
-      default:
-        return roomWidth;
-    }
-  }
-
+  // Aggregate Exclusions across all rooms
   double get totalExclusionAreaM2 {
     double total = 0.0;
-    for (final item in _exclusions) {
-      total += item.areaM2;
+    for (final room in _rooms) {
+      total += room.exclusionAreaM2;
     }
     return total;
   }
 
-  // Direct area converted to square meters (m²)
-  double get directAreaM2 {
-    switch (_unitDirectArea) {
-      case 'cm²':
-        return directArea / 10000.0;
-      case 'sq ft':
-        return directArea * 0.09290304;
-      case 'sq in':
-        return directArea * 0.00064516;
-      case 'm²':
-      default:
-        return directArea;
-    }
-  }
-
-  // Gross area before deductions
+  // Aggregate Gross Area across all rooms
   double get grossArea {
-    if (_areaMode == 'dimensions') {
-      return roomLengthM * roomWidthM;
-    } else {
-      return directAreaM2;
+    double total = 0.0;
+    for (final room in _rooms) {
+      total += room.grossArea;
     }
+    return total;
   }
 
-  // Net calculated area in square meters (m²) after subtracting exclusions
-  double get netArea {
-    return max(0.0, grossArea - totalExclusionAreaM2);
+  double get totalSkirtingAreaM2 {
+    double total = 0.0;
+    for (final room in _rooms) {
+      if (room.name.toLowerCase() == 'floor' && room.skirtingHeightInches > 0) {
+        total += room.netSkirtingPerimeterM *
+            (room.skirtingHeightInches * 0.0254);
+      }
+    }
+    return total;
   }
+
+  // Aggregate Net calculated area in square meters (m²) across all rooms + skirting area
+  double get netArea {
+    return max(0.0, grossArea - totalExclusionAreaM2) + totalSkirtingAreaM2;
+  }
+
+  double get roomLengthM => activeRoom.lengthM;
+  double get roomWidthM => activeRoom.widthM;
 
   double get tileLengthM {
     switch (_unitTileL) {
@@ -273,7 +323,8 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
         return (totalTilesNeeded * singleTileArea) * costPerBox;
       case 'per Box':
       default:
-        return (fullBoxes * costPerBox) + (looseTiles * (costPerBox / tilesPerBox));
+        return (fullBoxes * costPerBox) +
+            (looseTiles * (costPerBox / tilesPerBox));
     }
   }
 
@@ -281,11 +332,14 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
 
   void _copySummary() {
     final orderQtyText = fullBoxes > 0
-        ? (looseTiles > 0 ? '$fullBoxes Boxes + $looseTiles ${looseTiles == 1 ? 'Tile' : 'Tiles'}' : '$fullBoxes Boxes')
+        ? (looseTiles > 0
+            ? '$fullBoxes Boxes + $looseTiles ${looseTiles == 1 ? 'Tile' : 'Tiles'}'
+            : '$fullBoxes Boxes')
         : '$looseTiles ${looseTiles == 1 ? 'Tile' : 'Tiles'}';
 
     final text = '''
 Tile Calculation Summary:
+- Areas Included: ${_rooms.map((r) => r.name).join(', ')}
 - Order Quantity: $orderQtyText
 - Total Tiles Needed: $totalTilesNeeded pcs
 - Area (with waste): ${areaWithWaste.toStringAsFixed(2)} m²
@@ -299,9 +353,8 @@ Tile Calculation Summary:
     ScaffoldMessenger.of(context).clearSnackBars();
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        backgroundColor: widget.isDarkMode
-            ? Colors.white
-            : const Color(0xFF0F172A),
+        backgroundColor:
+            widget.isDarkMode ? Colors.white : const Color(0xFF0F172A),
         behavior: SnackBarBehavior.floating,
         margin: const EdgeInsets.all(16),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
@@ -404,49 +457,13 @@ Tile Calculation Summary:
       children: [
         AreaInputSection(
           isDark: isDark,
-          areaMode: _areaMode,
-          onAreaModeChanged: (mode) => setState(() => _areaMode = mode),
-          roomLengthController: _roomLengthController,
-          roomWidthController: _roomWidthController,
-          directAreaController: _directAreaController,
-          unitLength: _unitLength,
-          onUnitLengthChanged: (val) {
-            if (val != null) {
-              setState(() {
-                _unitLength = val;
-                _unitWidth = val;
-              });
-            }
-          },
-          unitWidth: _unitWidth,
-          onUnitWidthChanged: (val) {
-            if (val != null) {
-              setState(() {
-                _unitWidth = val;
-                _unitLength = val;
-              });
-            }
-          },
-          unitDirectArea: _unitDirectArea,
-          onUnitDirectAreaChanged: (val) {
-            if (val != null) setState(() => _unitDirectArea = val);
-          },
-          exclusions: _exclusions,
-          onAddExclusion: _addExclusionItem,
-          onRemoveExclusion: _removeExclusionItem,
-          onExclusionUnitChanged: (item, val) {
-            if (val != null) {
-              setState(() {
-                item.unitWidth = val;
-                item.unitHeight = val;
-              });
-            }
-          },
-          grossArea: grossArea,
-          totalExclusionAreaM2: totalExclusionAreaM2,
-          netArea: netArea,
-          roomLengthM: roomLengthM,
-          roomWidthM: roomWidthM,
+          rooms: _rooms,
+          selectedRoomIndex: _selectedRoomIndex,
+          onRoomSelected: (idx) => setState(() => _selectedRoomIndex = idx),
+          onAddRoom: _showAddRoomDialog,
+          onDeleteRoom: _removeRoom,
+          activeRoom: activeRoom,
+          onStateChanged: () => setState(() {}),
         ),
         const SizedBox(height: 16),
         TileSpecsSection(
@@ -513,7 +530,7 @@ Tile Calculation Summary:
         const SizedBox(height: 16),
         LayoutPreviewCard(
           isDark: isDark,
-          areaMode: _areaMode,
+          areaMode: activeRoom.areaMode,
           roomLengthM: roomLengthM,
           roomWidthM: roomWidthM,
           tileLengthM: tileLengthM,
