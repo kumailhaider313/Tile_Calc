@@ -43,26 +43,65 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
   RoomAreaItem get activeRoom =>
       _rooms.isNotEmpty ? _rooms[_selectedRoomIndex] : _rooms.first;
 
-  // Tile & Pricing Controllers
-  late TextEditingController _tileLengthController;
-  late TextEditingController _tileWidthController;
-  late TextEditingController _tilesPerBoxController;
   late TextEditingController _groutGapController;
-  late TextEditingController _costPerBoxController;
-
-  String _unitTileL = 'cm';
-  String _unitTileW = 'cm';
-  String _costPricingMode = 'per Box'; // 'per Box', 'per Tile', 'per m²'
   double _wastePercentage = 0.0;
 
   void _addNewRoom(String name,
       [String defaultL = '6.0', String defaultW = '5.0']) {
+    String tileL = '60';
+    String tileW = '60';
+    String tileUnit = 'cm';
+    String wallH = '7.0';
+
+    if (name.toLowerCase().contains('bathroom')) {
+      defaultL = '8.0';
+      defaultW = '6.0';
+      tileL = '6';
+      tileW = '4';
+      tileUnit = 'in';
+    } else if (name.toLowerCase().contains('room') ||
+        name.toLowerCase().contains('bedroom') ||
+        name.toLowerCase().contains('living')) {
+      defaultL = '12.0';
+      defaultW = '10.0';
+      tileL = '12';
+      tileW = '14';
+      tileUnit = 'in';
+    }
+
     final lController = TextEditingController(text: defaultL);
     final wController = TextEditingController(text: defaultW);
     final dController = TextEditingController(text: '20.0');
+    final wallHC = TextEditingController(text: wallH);
+    final skirtingCutoutC = TextEditingController(text: '0.0');
+
+    final tLC = TextEditingController(text: tileL);
+    final tWC = TextEditingController(text: tileW);
+    final tBoxC = TextEditingController(text: '10');
+    final costC = TextEditingController(text: '1800.00');
+
+    final openingWC = TextEditingController(text: '0.0');
+    final openingHC = TextEditingController(text: '0.0');
+    final darkCutoutWC = TextEditingController(text: '0.0');
+    final darkCutoutHC = TextEditingController(text: '0.0');
+    final motiveCutoutWC = TextEditingController(text: '0.0');
+    final motiveCutoutHC = TextEditingController(text: '0.0');
+
     lController.addListener(_onInputChange);
     wController.addListener(_onInputChange);
     dController.addListener(_onInputChange);
+    wallHC.addListener(_onInputChange);
+    skirtingCutoutC.addListener(_onInputChange);
+    tLC.addListener(_onInputChange);
+    tWC.addListener(_onInputChange);
+    tBoxC.addListener(_onInputChange);
+    costC.addListener(_onInputChange);
+    openingWC.addListener(_onInputChange);
+    openingHC.addListener(_onInputChange);
+    darkCutoutWC.addListener(_onInputChange);
+    darkCutoutHC.addListener(_onInputChange);
+    motiveCutoutWC.addListener(_onInputChange);
+    motiveCutoutHC.addListener(_onInputChange);
 
     final wExController = TextEditingController(text: '0.0');
     final hExController = TextEditingController(text: '0.0');
@@ -76,9 +115,6 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
       unitWidth: 'ft',
       unitHeight: 'ft',
     );
-
-    final skirtingCutoutC = TextEditingController(text: '0.0');
-    skirtingCutoutC.addListener(_onInputChange);
 
     setState(() {
       _rooms.add(
@@ -94,6 +130,23 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
           skirtingHeightInches: 4,
           skirtingCutoutController: skirtingCutoutC,
           skirtingCutoutUnit: 'ft',
+          wallHeightController: wallHC,
+          wallHeightUnit: 'ft',
+          tileLengthController: tLC,
+          tileWidthController: tWC,
+          tilesPerBoxController: tBoxC,
+          costPerBoxController: costC,
+          unitTileL: tileUnit,
+          unitTileW: tileUnit,
+          costPricingMode: 'per m²',
+          darkValue: 3,
+          motiveValue: 1,
+          openingWidthController: openingWC,
+          openingHeightController: openingHC,
+          darkCutoutWidthController: darkCutoutWC,
+          darkCutoutHeightController: darkCutoutHC,
+          motiveCutoutWidthController: motiveCutoutWC,
+          motiveCutoutHeightController: motiveCutoutHC,
         ),
       );
       _selectedRoomIndex = _rooms.length - 1;
@@ -182,30 +235,16 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
   @override
   void initState() {
     super.initState();
-    _tileLengthController = TextEditingController(text: '60');
-    _tileWidthController = TextEditingController(text: '60');
-    _tilesPerBoxController = TextEditingController(text: '4');
     _groutGapController = TextEditingController(text: '2');
-    _costPerBoxController = TextEditingController(text: '35.00');
-
-    // Add listeners for auto calculation
-    _tileLengthController.addListener(_onInputChange);
-    _tileWidthController.addListener(_onInputChange);
-    _tilesPerBoxController.addListener(_onInputChange);
     _groutGapController.addListener(_onInputChange);
-    _costPerBoxController.addListener(_onInputChange);
 
-    // Initialize with default Floor room
+    // Initialize with default Floor room (12x14 inch default for Room, 6x4 inch for Bathroom, 60x60cm for Floor)
     _addNewRoom('Floor', '6.0', '5.0');
   }
 
   @override
   void dispose() {
-    _tileLengthController.dispose();
-    _tileWidthController.dispose();
-    _tilesPerBoxController.dispose();
     _groutGapController.dispose();
-    _costPerBoxController.dispose();
     for (final room in _rooms) {
       room.dispose();
     }
@@ -216,26 +255,20 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
     setState(() {});
   }
 
-  // Raw values from inputs
-  double get tileLength => double.tryParse(_tileLengthController.text) ?? 0.0;
-  double get tileWidth => double.tryParse(_tileWidthController.text) ?? 0.0;
-  int get tilesPerBox => int.tryParse(_tilesPerBoxController.text) ?? 1;
-  double get costPerBox => double.tryParse(_costPerBoxController.text) ?? 0.0;
+  // Aggregate Gross Area across all rooms (including bathroom walls)
+  double get grossArea {
+    double total = 0.0;
+    for (final room in _rooms) {
+      total += room.totalRoomAreaM2;
+    }
+    return total;
+  }
 
   // Aggregate Exclusions across all rooms
   double get totalExclusionAreaM2 {
     double total = 0.0;
     for (final room in _rooms) {
       total += room.exclusionAreaM2;
-    }
-    return total;
-  }
-
-  // Aggregate Gross Area across all rooms
-  double get grossArea {
-    double total = 0.0;
-    for (final room in _rooms) {
-      total += room.grossArea;
     }
     return total;
   }
@@ -259,73 +292,120 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
   double get roomLengthM => activeRoom.lengthM;
   double get roomWidthM => activeRoom.widthM;
 
-  double get tileLengthM {
-    switch (_unitTileL) {
-      case 'mm':
-        return tileLength / 1000.0;
-      case 'cm':
-        return tileLength / 100.0;
-      case 'ft':
-        return tileLength * 0.3048;
-      case 'in':
-        return tileLength * 0.0254;
-      case 'm':
-      default:
-        return tileLength;
-    }
-  }
-
-  double get tileWidthM {
-    switch (_unitTileW) {
-      case 'mm':
-        return tileWidth / 1000.0;
-      case 'cm':
-        return tileWidth / 100.0;
-      case 'ft':
-        return tileWidth * 0.3048;
-      case 'in':
-        return tileWidth * 0.0254;
-      case 'm':
-      default:
-        return tileWidth;
-    }
-  }
-
-  double get singleTileArea {
-    if (tileLengthM <= 0 || tileWidthM <= 0) return 0.0;
-    return tileLengthM * tileWidthM;
-  }
-
   double get areaWithWaste => netArea * (1 + _wastePercentage / 100);
 
+  int get totalFloorTiles {
+    int total = 0;
+    for (final room in _rooms) {
+      total += room.getFloorTilesCount(_wastePercentage);
+    }
+    return total;
+  }
+
+  int get totalDarkTiles {
+    int total = 0;
+    for (final room in _rooms) {
+      total += room.getDarkTilesCount(_wastePercentage);
+    }
+    return total;
+  }
+
+  int get totalMotiveTiles {
+    int total = 0;
+    for (final room in _rooms) {
+      total += room.getMotiveTilesCount(_wastePercentage);
+    }
+    return total;
+  }
+
+  int get totalSkirtingTiles {
+    int total = 0;
+    for (final room in _rooms) {
+      total += room.getSkirtingTilesCount();
+    }
+    return total;
+  }
+
+  int get totalLightTiles {
+    int total = 0;
+    for (final room in _rooms) {
+      total += room.getLightTilesCount(_wastePercentage);
+    }
+    return total;
+  }
+
+  int get totalBathroomWallTiles {
+    int total = 0;
+    for (final room in _rooms) {
+      if (room.name.toLowerCase().contains('bathroom') &&
+          room.wallHeightM > 0 &&
+          room.darkValue == 0 &&
+          room.singleTileArea > 0) {
+        double wArea = room.perimeterM * room.wallHeightM;
+        total +=
+            (wArea * (1 + _wastePercentage / 100) / room.singleTileArea).ceil();
+      }
+    }
+    return total;
+  }
+
   int get totalTilesNeeded {
-    if (singleTileArea <= 0) return 0;
-    return (areaWithWaste / singleTileArea).ceil();
+    return totalFloorTiles +
+        totalDarkTiles +
+        totalMotiveTiles +
+        totalSkirtingTiles +
+        totalBathroomWallTiles +
+        totalLightTiles;
   }
 
   int get fullBoxes {
-    if (tilesPerBox <= 0) return totalTilesNeeded;
-    return totalTilesNeeded ~/ tilesPerBox;
+    if (activeRoom.tilesPerBox <= 0) return totalTilesNeeded;
+    return totalTilesNeeded ~/ activeRoom.tilesPerBox;
   }
 
   int get looseTiles {
-    if (tilesPerBox <= 0) return 0;
-    return totalTilesNeeded % tilesPerBox;
+    if (activeRoom.tilesPerBox <= 0) return 0;
+    return totalTilesNeeded % activeRoom.tilesPerBox;
   }
 
-  double get boxCoverage => tilesPerBox * singleTileArea;
+  double get boxCoverage => activeRoom.tilesPerBox * activeRoom.singleTileArea;
 
   double get totalCost {
-    switch (_costPricingMode) {
-      case 'per Tile':
-        return totalTilesNeeded * costPerBox;
-      case 'per m²':
-        return (totalTilesNeeded * singleTileArea) * costPerBox;
-      case 'per Box':
-      default:
-        return (fullBoxes * costPerBox) +
-            (looseTiles * (costPerBox / tilesPerBox));
+    double total = 0.0;
+    for (final room in _rooms) {
+      if (room.singleTileArea <= 0) continue;
+      int rTiles = room.getFloorTilesCount(_wastePercentage) +
+          room.getDarkTilesCount(_wastePercentage) +
+          room.getMotiveTilesCount(_wastePercentage) +
+          room.getSkirtingTilesCount() +
+          room.getLightTilesCount(_wastePercentage);
+      if (room.name.toLowerCase().contains('bathroom') &&
+          room.wallHeightM > 0 &&
+          room.darkValue == 0) {
+        rTiles +=
+            (room.perimeterM * room.wallHeightM * (1 + _wastePercentage / 100) / room.singleTileArea).ceil();
+      }
+
+      int rBoxes = room.tilesPerBox > 0
+          ? (rTiles / room.tilesPerBox).ceil().toInt()
+          : rTiles;
+      int rLoose = room.tilesPerBox > 0 ? rTiles % room.tilesPerBox : 0;
+
+      switch (room.costPricingMode) {
+        case 'per Tile':
+          total += rTiles * room.costPerBox;
+          break;
+        case 'per m²':
+          total += (rTiles * room.singleTileArea) * room.costPerBox;
+          break;
+        case 'per Box':
+        default:
+          total += (rBoxes * room.costPerBox) +
+              (rLoose * (room.costPerBox / max(1, room.tilesPerBox)));
+          break;
+      }
     }
+    return total;
   }
 
   String get currencySymbol => _currencySymbols[_selectedCurrency] ?? '\$';
@@ -343,7 +423,7 @@ Tile Calculation Summary:
 - Order Quantity: $orderQtyText
 - Total Tiles Needed: $totalTilesNeeded pcs
 - Area (with waste): ${areaWithWaste.toStringAsFixed(2)} m²
-- Pricing Option: $_costPricingMode
+- Pricing Option: ${activeRoom.costPricingMode}
 - Estimated Cost: $currencySymbol${totalCost.toStringAsFixed(2)}
 '''
         .trim();
@@ -440,12 +520,30 @@ Tile Calculation Summary:
             ),
           ),
         ),
-        child: Text(
-          'TileCalc Pro © 2026. Designed for precision flooring, tiling & remodeling projects. Developed by Kumail Computer.',
+        child: RichText(
           textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: 11,
-            color: isDark ? const Color(0xFF64748B) : const Color(0xFF94A3B8),
+          text: TextSpan(
+            style: const TextStyle(fontSize: 11),
+            children: [
+              TextSpan(
+                text:
+                    'TileCalc Pro © 2026. Designed for precision flooring, tiling & remodeling projects. ',
+                style: TextStyle(
+                  color: isDark
+                      ? const Color(0xFF64748B)
+                      : const Color(0xFF94A3B8),
+                ),
+              ),
+              TextSpan(
+                text: 'Developed by Kumail Computer.',
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: isDark
+                      ? const Color(0xFF34D399)
+                      : const Color(0xFF16A34A),
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -468,37 +566,41 @@ Tile Calculation Summary:
         const SizedBox(height: 16),
         TileSpecsSection(
           isDark: isDark,
-          tileLengthController: _tileLengthController,
-          tileWidthController: _tileWidthController,
-          tilesPerBoxController: _tilesPerBoxController,
+          tileLengthController: activeRoom.tileLengthController,
+          tileWidthController: activeRoom.tileWidthController,
+          tilesPerBoxController: activeRoom.tilesPerBoxController,
           groutGapController: _groutGapController,
-          costPerBoxController: _costPerBoxController,
-          unitTileL: _unitTileL,
+          costPerBoxController: activeRoom.costPerBoxController,
+          unitTileL: activeRoom.unitTileL,
           onUnitTileLChanged: (val) {
             if (val != null) {
               setState(() {
-                _unitTileL = val;
-                _unitTileW = val;
+                activeRoom.unitTileL = val;
+                activeRoom.unitTileW = val;
               });
             }
           },
-          unitTileW: _unitTileW,
+          unitTileW: activeRoom.unitTileW,
           onUnitTileWChanged: (val) {
             if (val != null) {
               setState(() {
-                _unitTileW = val;
-                _unitTileL = val;
+                activeRoom.unitTileW = val;
+                activeRoom.unitTileL = val;
               });
             }
           },
           currencySymbol: currencySymbol,
-          costPricingMode: _costPricingMode,
+          costPricingMode: activeRoom.costPricingMode,
           onCostPricingModeChanged: (val) {
-            if (val != null) setState(() => _costPricingMode = val);
+            if (val != null) {
+              setState(() {
+                activeRoom.costPricingMode = val;
+              });
+            }
           },
-          singleTileArea: singleTileArea,
-          tileLengthM: tileLengthM,
-          tileWidthM: tileWidthM,
+          singleTileArea: activeRoom.singleTileArea,
+          tileLengthM: activeRoom.tileLengthM,
+          tileWidthM: activeRoom.tileWidthM,
         ),
         const SizedBox(height: 16),
         WasteSection(
@@ -523,9 +625,11 @@ Tile Calculation Summary:
           totalTilesNeeded: totalTilesNeeded,
           areaWithWaste: areaWithWaste,
           netArea: netArea,
-          singleTileArea: singleTileArea,
+          singleTileArea: activeRoom.singleTileArea,
           boxCoverage: boxCoverage,
           onCopySummary: _copySummary,
+          rooms: _rooms,
+          wastePercentage: _wastePercentage,
         ),
         const SizedBox(height: 16),
         LayoutPreviewCard(
@@ -533,8 +637,8 @@ Tile Calculation Summary:
           areaMode: activeRoom.areaMode,
           roomLengthM: roomLengthM,
           roomWidthM: roomWidthM,
-          tileLengthM: tileLengthM,
-          tileWidthM: tileWidthM,
+          tileLengthM: activeRoom.tileLengthM,
+          tileWidthM: activeRoom.tileWidthM,
         ),
       ],
     );

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:math';
+import '../models/room_area_item.dart';
 
 class ResultsSummaryCard extends StatelessWidget {
   final bool isDark;
@@ -12,6 +14,8 @@ class ResultsSummaryCard extends StatelessWidget {
   final double singleTileArea;
   final double boxCoverage;
   final VoidCallback onCopySummary;
+  final List<RoomAreaItem> rooms;
+  final double wastePercentage;
 
   const ResultsSummaryCard({
     super.key,
@@ -26,6 +30,8 @@ class ResultsSummaryCard extends StatelessWidget {
     required this.singleTileArea,
     required this.boxCoverage,
     required this.onCopySummary,
+    required this.rooms,
+    required this.wastePercentage,
   });
 
   Widget _buildMetricTile(String title, String value, String unit) {
@@ -70,6 +76,167 @@ class ResultsSummaryCard extends StatelessWidget {
                 ),
               ),
             ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _formatTiles(int count, int tilesPerBox) {
+    if (tilesPerBox <= 0) return '$count pcs';
+    int boxes = count ~/ tilesPerBox;
+    int loose = count % tilesPerBox;
+    if (boxes > 0) {
+      if (loose > 0) {
+        return '$boxes Box${boxes > 1 ? 'es' : ''} + $loose ${loose == 1 ? 'Tile' : 'Tiles'}';
+      } else {
+        return '$boxes Box${boxes > 1 ? 'es' : ''}';
+      }
+    } else {
+      return '$loose ${loose == 1 ? 'Tile' : 'Tiles'}';
+    }
+  }
+
+  Widget _buildRoomBreakdownBox(
+      RoomAreaItem room, double wastePct, String currencySymbol) {
+    int floorT = room.getFloorTilesCount(wastePct);
+    int darkT = room.getDarkTilesCount(wastePct);
+    int motiveT = room.getMotiveTilesCount(wastePct);
+    int skirtT = room.getSkirtingTilesCount();
+    int lightT = room.getLightTilesCount(wastePct);
+    int wallT = 0;
+    if (room.name.toLowerCase().contains('bathroom') &&
+        room.wallHeightM > 0 &&
+        room.darkValue == 0 &&
+        room.singleTileArea > 0) {
+      wallT = (room.perimeterM * room.wallHeightM * (1 + wastePct / 100) /
+              room.singleTileArea)
+          .ceil();
+    }
+    int roomTotalTiles = floorT + darkT + motiveT + skirtT + wallT + lightT;
+    double roomArea = room.totalRoomAreaM2;
+    double roomAreaWithWaste = roomArea * (1 + wastePct / 100);
+
+    double roomCost = 0.0;
+    if (room.singleTileArea > 0) {
+      int rBoxes = room.tilesPerBox > 0
+          ? (roomTotalTiles / room.tilesPerBox).ceil().toInt()
+          : roomTotalTiles;
+      int rLoose = room.tilesPerBox > 0 ? roomTotalTiles % room.tilesPerBox : 0;
+      switch (room.costPricingMode) {
+        case 'per Tile':
+          roomCost = roomTotalTiles * room.costPerBox;
+          break;
+        case 'per m²':
+          roomCost = (roomTotalTiles * room.singleTileArea) * room.costPerBox;
+          break;
+        case 'per Box':
+        default:
+          roomCost = (rBoxes * room.costPerBox) +
+              (rLoose * (room.costPerBox / max(1, room.tilesPerBox)));
+          break;
+      }
+    }
+
+    return Container(
+      width: double.infinity,
+      margin: const EdgeInsets.only(bottom: 10),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                room.name.toUpperCase(),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFA7F3D0),
+                ),
+              ),
+              Text(
+                '$currencySymbol${roomCost.toStringAsFixed(2)}',
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          if (floorT > 0)
+            _buildSmallRow(
+                'Floor Tiles', _formatTiles(floorT, room.tilesPerBox)),
+          if (darkT > 0)
+            _buildSmallRow(
+                'Dark Tiles', _formatTiles(darkT, room.tilesPerBox)),
+          if (motiveT > 0)
+            _buildSmallRow(
+                'Motive Tiles', _formatTiles(motiveT, room.tilesPerBox)),
+          if (lightT > 0)
+            _buildSmallRow(
+                'Light Tiles', _formatTiles(lightT, room.tilesPerBox)),
+          if (skirtT > 0)
+            _buildSmallRow(
+                'Skirting Tiles', _formatTiles(skirtT, room.tilesPerBox)),
+          if (wallT > 0)
+            _buildSmallRow(
+                'Bathroom Wall Tiles', _formatTiles(wallT, room.tilesPerBox)),
+          const Divider(color: Colors.white24, height: 12),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Area: ${roomAreaWithWaste.toStringAsFixed(2)} m²',
+                style: const TextStyle(
+                  fontSize: 10,
+                  color: Color(0xFFA7F3D0),
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              Text(
+                'Total: ${_formatTiles(roomTotalTiles, room.tilesPerBox)}',
+                style: const TextStyle(
+                  fontSize: 11,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.white,
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSmallRow(String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 2),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              fontSize: 11,
+              color: Color(0xFFA7F3D0),
+            ),
+          ),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
           ),
         ],
       ),
@@ -148,7 +315,22 @@ class ResultsSummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 16),
 
-          // Primary Metric Box
+          // Room-by-Room Breakdown Boxes
+          const Text(
+            'Room-by-Room Breakdown',
+            style: TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFFA7F3D0),
+            ),
+          ),
+          const SizedBox(height: 10),
+          ...rooms.map((room) =>
+              _buildRoomBreakdownBox(room, wastePercentage, currencySymbol)),
+
+          const SizedBox(height: 6),
+
+          // Primary Metric Box (Total Order Quantity & Cost)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(16),
@@ -161,7 +343,7 @@ class ResultsSummaryCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Text(
-                  'Recommended Order Quantity',
+                  'Project Total Order Quantity',
                   style: TextStyle(
                     fontSize: 11,
                     color: Color(0xFFA7F3D0),
@@ -219,7 +401,7 @@ class ResultsSummaryCard extends StatelessWidget {
                           ),
                         ),
                         const Text(
-                          'Estimated Cost',
+                          'Total Estimated Cost',
                           style: TextStyle(
                             fontSize: 10,
                             color: Color(0xFFA7F3D0),

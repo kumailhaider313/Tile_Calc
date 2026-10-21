@@ -191,41 +191,566 @@ class AreaInputSection extends StatelessWidget {
 
           // Active Room Inputs
           activeRoom.areaMode == 'dimensions'
-              ? Row(
+              ? Column(
                   children: [
-                    Expanded(
-                      child: buildInputFieldWithUnit(
+                    Row(
+                      children: [
+                        Expanded(
+                          child: buildInputFieldWithUnit(
+                            isDark: isDark,
+                            label: '${activeRoom.name} Length',
+                            controller: activeRoom.lengthController,
+                            unitValue: activeRoom.unitLength,
+                            unitOptions: const ['m', 'cm', 'ft', 'in'],
+                            onUnitChanged: (val) {
+                              if (val != null) {
+                                activeRoom.unitLength = val;
+                                activeRoom.unitWidth = val;
+                                onStateChanged();
+                              }
+                            },
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: buildInputFieldWithUnit(
+                            isDark: isDark,
+                            label: '${activeRoom.name} Width',
+                            controller: activeRoom.widthController,
+                            unitValue: activeRoom.unitWidth,
+                            unitOptions: const ['m', 'cm', 'ft', 'in'],
+                            onUnitChanged: (val) {
+                              if (val != null) {
+                                activeRoom.unitWidth = val;
+                                activeRoom.unitLength = val;
+                                onStateChanged();
+                              }
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                    if (activeRoom.name.toLowerCase().contains('bathroom')) ...[
+                      const SizedBox(height: 12),
+                      buildInputFieldWithUnit(
                         isDark: isDark,
-                        label: '${activeRoom.name} Length',
-                        controller: activeRoom.lengthController,
-                        unitValue: activeRoom.unitLength,
-                        unitOptions: const ['m', 'cm', 'ft', 'in'],
+                        label: 'Bathroom Height (Wall / 3D)',
+                        controller: activeRoom.wallHeightController,
+                        unitValue: activeRoom.wallHeightUnit,
+                        unitOptions: const ['ft', 'm', 'cm', 'in'],
                         onUnitChanged: (val) {
                           if (val != null) {
-                            activeRoom.unitLength = val;
-                            activeRoom.unitWidth = val;
+                            activeRoom.wallHeightUnit = val;
                             onStateChanged();
                           }
                         },
                       ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: buildInputFieldWithUnit(
-                        isDark: isDark,
-                        label: '${activeRoom.name} Width',
-                        controller: activeRoom.widthController,
-                        unitValue: activeRoom.unitWidth,
-                        unitOptions: const ['m', 'cm', 'ft', 'in'],
-                        onUnitChanged: (val) {
-                          if (val != null) {
-                            activeRoom.unitWidth = val;
-                            activeRoom.unitLength = val;
-                            onStateChanged();
-                          }
-                        },
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.door_front_door_rounded,
+                                size: 16,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
+                                'Door / Opening Height Deduction',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.bold,
+                                  color: isDark
+                                      ? const Color(0xFFCBD5E1)
+                                      : const Color(0xFF475569),
+                                ),
+                              ),
+                            ],
+                          ),
+                          Switch.adaptive(
+                            value: activeRoom.hasOpening,
+                            activeTrackColor: const Color(0xFF16A34A),
+                            onChanged: (val) {
+                              activeRoom.hasOpening = val;
+                              onStateChanged();
+                            },
+                          ),
+                        ],
                       ),
-                    ),
+                      if (activeRoom.hasOpening) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: buildInputFieldWithUnit(
+                                isDark: isDark,
+                                label: 'Opening Width',
+                                controller: activeRoom.openingWidthController,
+                                unitValue: activeRoom.openingUnit,
+                                unitOptions: const ['ft', 'm', 'cm', 'in'],
+                                onUnitChanged: (val) {
+                                  if (val != null) {
+                                    activeRoom.openingUnit = val;
+                                    onStateChanged();
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: buildInputFieldWithUnit(
+                                isDark: isDark,
+                                label: 'Opening Height',
+                                controller: activeRoom.openingHeightController,
+                                unitValue: activeRoom.openingUnit,
+                                unitOptions: const ['ft', 'm', 'cm', 'in'],
+                                onUnitChanged: (val) {
+                                  if (val != null) {
+                                    activeRoom.openingUnit = val;
+                                    onStateChanged();
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
+                    if (activeRoom.name.toLowerCase().contains('bedroom')) ...[
+                      const SizedBox(height: 12),
+                      Divider(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      ),
+                      const SizedBox(height: 12),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.tune_rounded,
+                            size: 16,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Bedroom Finish Style (Choose One):',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? const Color(0xFFCBD5E1)
+                                  : const Color(0xFF475569),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                activeRoom.bedroomFinishMode = 'motiveDark';
+                                onStateChanged();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: activeRoom.bedroomFinishMode == 'motiveDark'
+                                      ? (isDark
+                                          ? const Color(0xFF064E3B)
+                                          : const Color(0xFFDCFCE7))
+                                      : (isDark
+                                          ? const Color(0xFF1E293B)
+                                          : const Color(0xFFF1F5F9)),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: activeRoom.bedroomFinishMode == 'motiveDark'
+                                        ? const Color(0xFF16A34A)
+                                        : Colors.transparent,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Motive & Dark',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: activeRoom.bedroomFinishMode == 'motiveDark'
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
+                                    color: activeRoom.bedroomFinishMode == 'motiveDark'
+                                        ? (isDark
+                                            ? const Color(0xFF34D399)
+                                            : const Color(0xFF15803D))
+                                        : (isDark
+                                            ? const Color(0xFFCBD5E1)
+                                            : const Color(0xFF475569)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: GestureDetector(
+                              onTap: () {
+                                activeRoom.bedroomFinishMode = 'skirting';
+                                onStateChanged();
+                              },
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(vertical: 8),
+                                alignment: Alignment.center,
+                                decoration: BoxDecoration(
+                                  color: activeRoom.bedroomFinishMode == 'skirting'
+                                      ? (isDark
+                                          ? const Color(0xFF064E3B)
+                                          : const Color(0xFFDCFCE7))
+                                      : (isDark
+                                          ? const Color(0xFF1E293B)
+                                          : const Color(0xFFF1F5F9)),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: activeRoom.bedroomFinishMode == 'skirting'
+                                        ? const Color(0xFF16A34A)
+                                        : Colors.transparent,
+                                  ),
+                                ),
+                                child: Text(
+                                  'Skirting',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: activeRoom.bedroomFinishMode == 'skirting'
+                                        ? FontWeight.bold
+                                        : FontWeight.w500,
+                                    color: activeRoom.bedroomFinishMode == 'skirting'
+                                        ? (isDark
+                                            ? const Color(0xFF34D399)
+                                            : const Color(0xFF15803D))
+                                        : (isDark
+                                            ? const Color(0xFFCBD5E1)
+                                            : const Color(0xFF475569)),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                    if (activeRoom.name.toLowerCase().contains('bathroom') ||
+                        (activeRoom.name.toLowerCase().contains('bedroom') &&
+                            activeRoom.bedroomFinishMode == 'motiveDark')) ...[
+                      const SizedBox(height: 12),
+                      Divider(
+                        color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+                      ),
+                      const SizedBox(height: 12),
+                      // Dark Tiles Selector
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.dark_mode_rounded,
+                            size: 16,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Dark Tiles (Walls & Floor):',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? const Color(0xFFCBD5E1)
+                                  : const Color(0xFF475569),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(
+                            'Dark Rows:',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ...[0, 3, 4].map((d) {
+                            final isSelected = activeRoom.darkValue == d;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () {
+                                  activeRoom.darkValue = d;
+                                  onStateChanged();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? (isDark
+                                            ? const Color(0xFF064E3B)
+                                            : const Color(0xFFDCFCE7))
+                                        : (isDark
+                                            ? const Color(0xFF1E293B)
+                                            : const Color(0xFFF1F5F9)),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFF16A34A)
+                                          : Colors.transparent,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '$d',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? (isDark
+                                              ? const Color(0xFF34D399)
+                                              : const Color(0xFF15803D))
+                                          : (isDark
+                                              ? const Color(0xFFCBD5E1)
+                                              : const Color(0xFF475569)),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Dark Tile Cut-Out (Window/Niche):',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: activeRoom.hasDarkCutout,
+                            activeTrackColor: const Color(0xFF16A34A),
+                            onChanged: (val) {
+                              activeRoom.hasDarkCutout = val;
+                              onStateChanged();
+                            },
+                          ),
+                        ],
+                      ),
+                      if (activeRoom.hasDarkCutout) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: buildInputFieldWithUnit(
+                                isDark: isDark,
+                                label: 'Dark Cut-Out Width',
+                                controller:
+                                    activeRoom.darkCutoutWidthController,
+                                unitValue: activeRoom.darkCutoutUnit,
+                                unitOptions: const ['ft', 'm', 'cm', 'in'],
+                                onUnitChanged: (val) {
+                                  if (val != null) {
+                                    activeRoom.darkCutoutUnit = val;
+                                    onStateChanged();
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: buildInputFieldWithUnit(
+                                isDark: isDark,
+                                label: 'Dark Cut-Out Height',
+                                controller:
+                                    activeRoom.darkCutoutHeightController,
+                                unitValue: activeRoom.darkCutoutUnit,
+                                unitOptions: const ['ft', 'm', 'cm', 'in'],
+                                onUnitChanged: (val) {
+                                  if (val != null) {
+                                    activeRoom.darkCutoutUnit = val;
+                                    onStateChanged();
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      const SizedBox(height: 12),
+                      // Motive Selector
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.border_style_rounded,
+                            size: 16,
+                            color: isDark
+                                ? const Color(0xFF94A3B8)
+                                : const Color(0xFF64748B),
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            'Motive (Styled Border):',
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.bold,
+                              color: isDark
+                                  ? const Color(0xFFCBD5E1)
+                                  : const Color(0xFF475569),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        children: [
+                          Text(
+                            'Motive Height Multiplier:',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          ...[0, 1, 2].map((m) {
+                            final isSelected = activeRoom.motiveValue == m;
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 8),
+                              child: GestureDetector(
+                                onTap: () {
+                                  activeRoom.motiveValue = m;
+                                  onStateChanged();
+                                },
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 6),
+                                  decoration: BoxDecoration(
+                                    color: isSelected
+                                        ? (isDark
+                                            ? const Color(0xFF064E3B)
+                                            : const Color(0xFFDCFCE7))
+                                        : (isDark
+                                            ? const Color(0xFF1E293B)
+                                            : const Color(0xFFF1F5F9)),
+                                    borderRadius: BorderRadius.circular(8),
+                                    border: Border.all(
+                                      color: isSelected
+                                          ? const Color(0xFF16A34A)
+                                          : Colors.transparent,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    '$m',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: isSelected
+                                          ? FontWeight.bold
+                                          : FontWeight.w500,
+                                      color: isSelected
+                                          ? (isDark
+                                              ? const Color(0xFF34D399)
+                                              : const Color(0xFF15803D))
+                                          : (isDark
+                                              ? const Color(0xFFCBD5E1)
+                                              : const Color(0xFF475569)),
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Motive Tile Cut-Out:',
+                            style: TextStyle(
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                              color: isDark
+                                  ? const Color(0xFF94A3B8)
+                                  : const Color(0xFF64748B),
+                            ),
+                          ),
+                          Switch.adaptive(
+                            value: activeRoom.hasMotiveCutout,
+                            activeTrackColor: const Color(0xFF16A34A),
+                            onChanged: (val) {
+                              activeRoom.hasMotiveCutout = val;
+                              onStateChanged();
+                            },
+                          ),
+                        ],
+                      ),
+                      if (activeRoom.hasMotiveCutout) ...[
+                        const SizedBox(height: 8),
+                        Row(
+                          children: [
+                            Expanded(
+                              child: buildInputFieldWithUnit(
+                                isDark: isDark,
+                                label: 'Motive Cut-Out Width',
+                                controller:
+                                    activeRoom.motiveCutoutWidthController,
+                                unitValue: activeRoom.motiveCutoutUnit,
+                                unitOptions: const ['ft', 'm', 'cm', 'in'],
+                                onUnitChanged: (val) {
+                                  if (val != null) {
+                                    activeRoom.motiveCutoutUnit = val;
+                                    onStateChanged();
+                                  }
+                                },
+                              ),
+                            ),
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: buildInputFieldWithUnit(
+                                isDark: isDark,
+                                label: 'Motive Cut-Out Height',
+                                controller:
+                                    activeRoom.motiveCutoutHeightController,
+                                unitValue: activeRoom.motiveCutoutUnit,
+                                unitOptions: const ['ft', 'm', 'cm', 'in'],
+                                onUnitChanged: (val) {
+                                  if (val != null) {
+                                    activeRoom.motiveCutoutUnit = val;
+                                    onStateChanged();
+                                  }
+                                },
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ],
                   ],
                 )
               : buildInputFieldWithUnit(
@@ -242,8 +767,10 @@ class AreaInputSection extends StatelessWidget {
                   },
                 ),
 
-          // Tile Skirting (Only shown in Floor tab)
-          if (activeRoom.name.toLowerCase() == 'floor') ...[
+          // Tile Skirting (Shown in Floor and Bedroom tabs when skirting mode is active)
+          if (activeRoom.name.toLowerCase() == 'floor' ||
+              (activeRoom.name.toLowerCase().contains('bedroom') &&
+                  activeRoom.bedroomFinishMode == 'skirting')) ...[
             const SizedBox(height: 12),
             Divider(
               color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
@@ -357,42 +884,139 @@ class AreaInputSection extends StatelessWidget {
           ),
           const SizedBox(height: 12),
 
-          // Deductions / Exclusions Header
-          LayoutBuilder(
-            builder: (context, constraints) {
-              final isNarrow = constraints.maxWidth < 450;
-              return isNarrow
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.crop_free_rounded,
-                              size: 16,
-                              color: isDark
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF64748B),
+          // Deductions / Exclusions (Only shown for non-Floor/Bathroom/Bedroom rooms)
+          if (!(activeRoom.name.toLowerCase().contains('floor') ||
+              activeRoom.name.toLowerCase().contains('bathroom') ||
+              activeRoom.name.toLowerCase().contains('bedroom'))) ...[
+            const SizedBox(height: 12),
+            Divider(
+              color: isDark ? const Color(0xFF1E293B) : const Color(0xFFF1F5F9),
+            ),
+            const SizedBox(height: 12),
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final isNarrow = constraints.maxWidth < 450;
+                return isNarrow
+                    ? Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.crop_free_rounded,
+                                size: 16,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 6),
+                              Expanded(
+                                child: Text(
+                                  '${activeRoom.name} Cutouts (Doors, Windows)',
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.bold,
+                                    color: isDark
+                                        ? const Color(0xFFCBD5E1)
+                                        : const Color(0xFF475569),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Align(
+                            alignment: Alignment.centerRight,
+                            child: InkWell(
+                              onTap: () {
+                                final wC = TextEditingController(text: '0.0');
+                                final hC = TextEditingController(text: '0.0');
+                                wC.addListener(onStateChanged);
+                                hC.addListener(onStateChanged);
+                                activeRoom.exclusions.add(
+                                  ExclusionItem(
+                                    id: DateTime.now()
+                                        .microsecondsSinceEpoch
+                                        .toString(),
+                                    widthController: wC,
+                                    heightController: hC,
+                                    unitWidth: activeRoom.unitWidth,
+                                    unitHeight: activeRoom.unitWidth,
+                                  ),
+                                );
+                                onStateChanged();
+                              },
+                              borderRadius: BorderRadius.circular(8),
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 5,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: isDark
+                                      ? const Color(0xFF064E3B)
+                                      : const Color(0xFFDCFCE7),
+                                  borderRadius: BorderRadius.circular(8),
+                                  border: Border.all(
+                                    color: isDark
+                                        ? const Color(0xFF10B981)
+                                        : const Color(0xFF16A34A),
+                                  ),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(
+                                      Icons.add_rounded,
+                                      size: 14,
+                                      color: isDark
+                                          ? const Color(0xFF34D399)
+                                          : const Color(0xFF15803D),
+                                    ),
+                                    const SizedBox(width: 4),
+                                    Text(
+                                      'Add Cutout',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.bold,
+                                        color: isDark
+                                            ? const Color(0xFF34D399)
+                                            : const Color(0xFF15803D),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
                             ),
-                            const SizedBox(width: 6),
-                            Expanded(
-                              child: Text(
+                          ),
+                        ],
+                      )
+                    : Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.crop_free_rounded,
+                                size: 16,
+                                color: isDark
+                                    ? const Color(0xFF94A3B8)
+                                    : const Color(0xFF64748B),
+                              ),
+                              const SizedBox(width: 6),
+                              Text(
                                 '${activeRoom.name} Cutouts (Doors, Windows)',
                                 style: TextStyle(
-                                  fontSize: 11,
+                                  fontSize: 12,
                                   fontWeight: FontWeight.bold,
                                   color: isDark
                                       ? const Color(0xFFCBD5E1)
                                       : const Color(0xFF475569),
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: InkWell(
+                            ],
+                          ),
+                          InkWell(
                             onTap: () {
                               final wC = TextEditingController(text: '0.0');
                               final hC = TextEditingController(text: '0.0');
@@ -453,180 +1077,89 @@ class AreaInputSection extends StatelessWidget {
                               ),
                             ),
                           ),
-                        ),
-                      ],
-                    )
-                  : Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.crop_free_rounded,
-                              size: 16,
-                              color: isDark
-                                  ? const Color(0xFF94A3B8)
-                                  : const Color(0xFF64748B),
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${activeRoom.name} Cutouts (Doors, Windows)',
-                              style: TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.bold,
-                                color: isDark
-                                    ? const Color(0xFFCBD5E1)
-                                    : const Color(0xFF475569),
-                              ),
-                            ),
-                          ],
-                        ),
-                        InkWell(
-                          onTap: () {
-                            final wC = TextEditingController(text: '0.0');
-                            final hC = TextEditingController(text: '0.0');
-                            wC.addListener(onStateChanged);
-                            hC.addListener(onStateChanged);
-                            activeRoom.exclusions.add(
-                              ExclusionItem(
-                                id: DateTime.now()
-                                    .microsecondsSinceEpoch
-                                    .toString(),
-                                widthController: wC,
-                                heightController: hC,
-                                unitWidth: activeRoom.unitWidth,
-                                unitHeight: activeRoom.unitWidth,
-                              ),
-                            );
-                            onStateChanged();
-                          },
-                          borderRadius: BorderRadius.circular(8),
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 10,
-                              vertical: 5,
-                            ),
-                            decoration: BoxDecoration(
-                              color: isDark
-                                  ? const Color(0xFF064E3B)
-                                  : const Color(0xFFDCFCE7),
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isDark
-                                    ? const Color(0xFF10B981)
-                                    : const Color(0xFF16A34A),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.add_rounded,
-                                  size: 14,
-                                  color: isDark
-                                      ? const Color(0xFF34D399)
-                                      : const Color(0xFF15803D),
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  'Add Cutout',
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                    color: isDark
-                                        ? const Color(0xFF34D399)
-                                        : const Color(0xFF15803D),
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      ],
-                    );
-            },
-          ),
-
-          const SizedBox(height: 12),
-
-          // Exclusions List for Active Room
-          Column(
-            children: List.generate(activeRoom.exclusions.length, (index) {
-              final item = activeRoom.exclusions[index];
-              return Padding(
-                padding: const EdgeInsets.only(bottom: 10),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Expanded(
-                      child: buildInputFieldWithUnit(
-                        isDark: isDark,
-                        label: activeRoom.exclusions.length > 1
-                            ? 'Cutout #${index + 1} Width'
-                            : 'Exclusion Width',
-                        controller: item.widthController,
-                        unitValue: item.unitWidth,
-                        unitOptions: const ['m', 'cm', 'ft', 'in'],
-                        onUnitChanged: (val) {
-                          if (val != null) {
-                            item.unitWidth = val;
-                            item.unitHeight = val;
-                            onStateChanged();
-                          }
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: buildInputFieldWithUnit(
-                        isDark: isDark,
-                        label: activeRoom.exclusions.length > 1
-                            ? 'Cutout #${index + 1} Height'
-                            : 'Exclusion Height',
-                        controller: item.heightController,
-                        unitValue: item.unitHeight,
-                        unitOptions: const ['m', 'cm', 'ft', 'in'],
-                        onUnitChanged: (val) {
-                          if (val != null) {
-                            item.unitHeight = val;
-                            item.unitWidth = val;
-                            onStateChanged();
-                          }
-                        },
-                      ),
-                    ),
-                    if (activeRoom.exclusions.length > 1 ||
-                        item.width > 0 ||
-                        item.height > 0) ...[
-                      const SizedBox(width: 6),
-                      Padding(
-                        padding: const EdgeInsets.only(bottom: 2),
-                        child: IconButton(
-                          onPressed: () {
-                            setStateSafely() {
-                              final rem = activeRoom.exclusions.removeAt(index);
-                              rem.dispose();
+                        ],
+                      );
+              },
+            ),
+            const SizedBox(height: 12),
+            Column(
+              children: List.generate(activeRoom.exclusions.length, (index) {
+                final item = activeRoom.exclusions[index];
+                return Padding(
+                  padding: const EdgeInsets.only(bottom: 10),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: [
+                      Expanded(
+                        child: buildInputFieldWithUnit(
+                          isDark: isDark,
+                          label: activeRoom.exclusions.length > 1
+                              ? 'Cutout #${index + 1} Width'
+                              : 'Exclusion Width',
+                          controller: item.widthController,
+                          unitValue: item.unitWidth,
+                          unitOptions: const ['m', 'cm', 'ft', 'in'],
+                          onUnitChanged: (val) {
+                            if (val != null) {
+                              item.unitWidth = val;
+                              item.unitHeight = val;
                               onStateChanged();
                             }
-
-                            setStateSafely();
                           },
-                          icon: const Icon(
-                            Icons.remove_circle_outline_rounded,
-                          ),
-                          color: isDark
-                              ? const Color(0xFFF87171)
-                              : const Color(0xFFEF4444),
-                          tooltip: 'Remove Cutout',
-                          visualDensity: VisualDensity.compact,
                         ),
                       ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: buildInputFieldWithUnit(
+                          isDark: isDark,
+                          label: activeRoom.exclusions.length > 1
+                              ? 'Cutout #${index + 1} Height'
+                              : 'Exclusion Height',
+                          controller: item.heightController,
+                          unitValue: item.unitHeight,
+                          unitOptions: const ['m', 'cm', 'ft', 'in'],
+                          onUnitChanged: (val) {
+                            if (val != null) {
+                              item.unitHeight = val;
+                              item.unitWidth = val;
+                              onStateChanged();
+                            }
+                          },
+                        ),
+                      ),
+                      if (activeRoom.exclusions.length > 1 ||
+                          item.width > 0 ||
+                          item.height > 0) ...[
+                        const SizedBox(width: 6),
+                        Padding(
+                          padding: const EdgeInsets.only(bottom: 2),
+                          child: IconButton(
+                            onPressed: () {
+                              setStateSafely() {
+                                final rem = activeRoom.exclusions.removeAt(index);
+                                rem.dispose();
+                                onStateChanged();
+                              }
+
+                              setStateSafely();
+                            },
+                            icon: const Icon(
+                              Icons.remove_circle_outline_rounded,
+                            ),
+                            color: isDark
+                                ? const Color(0xFFF87171)
+                                : const Color(0xFFEF4444),
+                            tooltip: 'Remove Cutout',
+                            visualDensity: VisualDensity.compact,
+                          ),
+                        ),
+                      ],
                     ],
-                  ],
-                ),
-              );
-            }),
-          ),
+                  ),
+                );
+              }),
+            ),
+          ],
 
           const SizedBox(height: 12),
 
