@@ -82,10 +82,6 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
 
     final openingWC = TextEditingController(text: '0.0');
     final openingHC = TextEditingController(text: '0.0');
-    final darkCutoutWC = TextEditingController(text: '0.0');
-    final darkCutoutHC = TextEditingController(text: '0.0');
-    final motiveCutoutWC = TextEditingController(text: '0.0');
-    final motiveCutoutHC = TextEditingController(text: '0.0');
 
     lController.addListener(_onInputChange);
     wController.addListener(_onInputChange);
@@ -98,10 +94,6 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
     costC.addListener(_onInputChange);
     openingWC.addListener(_onInputChange);
     openingHC.addListener(_onInputChange);
-    darkCutoutWC.addListener(_onInputChange);
-    darkCutoutHC.addListener(_onInputChange);
-    motiveCutoutWC.addListener(_onInputChange);
-    motiveCutoutHC.addListener(_onInputChange);
 
     final wExController = TextEditingController(text: '0.0');
     final hExController = TextEditingController(text: '0.0');
@@ -143,10 +135,6 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
           motiveValue: 1,
           openingWidthController: openingWC,
           openingHeightController: openingHC,
-          darkCutoutWidthController: darkCutoutWC,
-          darkCutoutHeightController: darkCutoutHC,
-          motiveCutoutWidthController: motiveCutoutWC,
-          motiveCutoutHeightController: motiveCutoutHC,
         ),
       );
       _selectedRoomIndex = _rooms.length - 1;

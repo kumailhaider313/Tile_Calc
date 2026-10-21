@@ -2,6 +2,14 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'exclusion_item.dart';
 
+int cleanCeil(double val) {
+  double rounded = double.parse(val.toStringAsFixed(4));
+  if ((rounded - rounded.round()).abs() < 0.0001) {
+    return rounded.round();
+  }
+  return val.ceil();
+}
+
 class RoomAreaItem {
   final String id;
   String name;
@@ -33,18 +41,6 @@ class RoomAreaItem {
   TextEditingController openingWidthController;
   TextEditingController openingHeightController;
   String openingUnit;
-
-  // Dark Cutout properties
-  bool hasDarkCutout;
-  TextEditingController darkCutoutWidthController;
-  TextEditingController darkCutoutHeightController;
-  String darkCutoutUnit;
-
-  // Motive Cutout properties
-  bool hasMotiveCutout;
-  TextEditingController motiveCutoutWidthController;
-  TextEditingController motiveCutoutHeightController;
-  String motiveCutoutUnit;
 
   // Room-specific Tile Specs
   TextEditingController tileLengthController;
@@ -78,14 +74,6 @@ class RoomAreaItem {
     required this.openingWidthController,
     required this.openingHeightController,
     this.openingUnit = 'ft',
-    this.hasDarkCutout = false,
-    required this.darkCutoutWidthController,
-    required this.darkCutoutHeightController,
-    this.darkCutoutUnit = 'ft',
-    this.hasMotiveCutout = false,
-    required this.motiveCutoutWidthController,
-    required this.motiveCutoutHeightController,
-    this.motiveCutoutUnit = 'ft',
     required this.tileLengthController,
     required this.tileWidthController,
     required this.tilesPerBoxController,
@@ -192,36 +180,6 @@ class RoomAreaItem {
     }
   }
 
-  double get darkCutoutWidthM {
-    double v = double.tryParse(darkCutoutWidthController.text) ?? 0.0;
-    switch (darkCutoutUnit) {
-      case 'cm':
-        return v / 100.0;
-      case 'ft':
-        return v * 0.3048;
-      case 'in':
-        return v * 0.0254;
-      case 'm':
-      default:
-        return v;
-    }
-  }
-
-  double get motiveCutoutWidthM {
-    double v = double.tryParse(motiveCutoutWidthController.text) ?? 0.0;
-    switch (motiveCutoutUnit) {
-      case 'cm':
-        return v / 100.0;
-      case 'ft':
-        return v * 0.3048;
-      case 'in':
-        return v * 0.0254;
-      case 'm':
-      default:
-        return v;
-    }
-  }
-
   double get directAreaM2 {
     switch (unitDirectArea) {
       case 'cm²':
@@ -290,15 +248,13 @@ class RoomAreaItem {
       return 0.0;
     }
     double darkWallHeightM = darkValue * shortSideTileM;
-    double effectivePerimeter = perimeterM;
+    double grossDarkArea = perimeterM * darkWallHeightM;
+    double darkCutoutArea = 0.0;
     if (hasOpening) {
-      effectivePerimeter = max(0.0, effectivePerimeter - openingWidthM);
+      double overlapDarkH = min(openingHeightM, darkWallHeightM);
+      darkCutoutArea += openingWidthM * overlapDarkH;
     }
-    double darkArea = effectivePerimeter * darkWallHeightM;
-    if (hasDarkCutout) {
-      darkArea = max(0.0, darkArea - (darkCutoutWidthM * darkWallHeightM));
-    }
-    return darkArea;
+    return max(0.0, grossDarkArea - darkCutoutArea);
   }
 
   double get motiveAreaM2 {
@@ -310,16 +266,17 @@ class RoomAreaItem {
         areaMode != 'dimensions') {
       return 0.0;
     }
-    double motiveHeightM = motiveValue * shortSideTileM;
-    double effectivePerimeter = perimeterM;
+    double darkWallHeightM = darkValue * shortSideTileM;
+    double motiveWallHeightM = motiveValue * shortSideTileM;
+    double grossMotiveArea = perimeterM * motiveWallHeightM;
+    double motiveCutoutArea = 0.0;
     if (hasOpening) {
-      effectivePerimeter = max(0.0, effectivePerimeter - openingWidthM);
+      double motiveTop = darkWallHeightM + motiveWallHeightM;
+      double overlapMotiveH =
+          max(0.0, min(openingHeightM, motiveTop) - darkWallHeightM);
+      motiveCutoutArea += openingWidthM * overlapMotiveH;
     }
-    double motiveArea = effectivePerimeter * motiveHeightM;
-    if (hasMotiveCutout) {
-      motiveArea = max(0.0, motiveArea - (motiveCutoutWidthM * motiveHeightM));
-    }
-    return motiveArea;
+    return max(0.0, grossMotiveArea - motiveCutoutArea);
   }
 
   double get lightAreaM2 {
@@ -333,29 +290,17 @@ class RoomAreaItem {
     }
     double darkHeightM = darkValue * shortSideTileM;
     double motiveHeightM = motiveValue * shortSideTileM;
-    double remainingHeightM = wallHeightM - (darkHeightM + motiveHeightM);
-    if (remainingHeightM <= 0) return 0.0;
+    double totalBottomHeightM = darkHeightM + motiveHeightM;
+    if (wallHeightM <= totalBottomHeightM) return 0.0;
 
-    double effectivePerimeter = perimeterM;
-    if (hasOpening) {
-      effectivePerimeter = max(0.0, effectivePerimeter - openingWidthM);
-    }
-    double lightArea = effectivePerimeter * remainingHeightM;
-    if (hasDarkCutout) {
-      lightArea = max(0.0, lightArea - (darkCutoutWidthM * remainingHeightM));
-    }
-    if (hasMotiveCutout) {
-      lightArea = max(0.0, lightArea - (motiveCutoutWidthM * remainingHeightM));
-    }
-    // If opening height is less than total wall height, add the upper space above the opening door
-    if (hasOpening && wallHeightM > openingHeightM) {
-      double upperOpeningWidth = openingWidthM;
-      double upperOpeningHeight = wallHeightM - max(openingHeightM, darkHeightM + motiveHeightM);
-      if (upperOpeningHeight > 0) {
-        lightArea += (upperOpeningWidth * upperOpeningHeight);
-      }
-    }
-    return lightArea;
+    double totalWallArea = perimeterM * wallHeightM;
+    double openingArea = hasOpening ? (openingWidthM * openingHeightM) : 0.0;
+    double netDarkWallArea = darkWallAreaM2;
+    double netMotiveArea = motiveAreaM2;
+
+    double lightArea =
+        totalWallArea - openingArea - netDarkWallArea - netMotiveArea;
+    return max(0.0, lightArea);
   }
 
   double get totalRoomAreaM2 {
@@ -389,7 +334,7 @@ class RoomAreaItem {
     }
     if (singleTileArea <= 0) return 0;
     double areaWithWaste = netArea * (1 + wastePct / 100);
-    return (areaWithWaste / singleTileArea).ceil();
+    return cleanCeil(areaWithWaste / singleTileArea);
   }
 
   int getDarkTilesCount(double wastePct) {
@@ -397,7 +342,7 @@ class RoomAreaItem {
       double darkWallArea = darkWallAreaM2;
       double totalArea = darkWallArea + netArea;
       double areaWithWaste = totalArea * (1 + wastePct / 100);
-      return singleTileArea > 0 ? (areaWithWaste / singleTileArea).ceil() : 0;
+      return singleTileArea > 0 ? cleanCeil(areaWithWaste / singleTileArea) : 0;
     }
 
     if (name.toLowerCase().contains('bedroom') &&
@@ -416,13 +361,11 @@ class RoomAreaItem {
     double darkWallHeightM = darkValue * shortSideTileM;
     double darkWallArea = perimeterM * darkWallHeightM;
     if (hasOpening) {
-      darkWallArea = max(0.0, (perimeterM - openingWidthM) * darkWallHeightM);
-    }
-    if (hasDarkCutout) {
-      darkWallArea = max(0.0, darkWallArea - (darkCutoutWidthM * darkWallHeightM));
+      double overlapDarkH = min(openingHeightM, darkWallHeightM);
+      darkWallArea = max(0.0, darkWallArea - (openingWidthM * overlapDarkH));
     }
     double areaWithWaste = darkWallArea * (1 + wastePct / 100);
-    return (areaWithWaste / singleTileArea).ceil();
+    return cleanCeil(areaWithWaste / singleTileArea);
   }
 
   int getMotiveTilesCount(double wastePct) {
@@ -441,7 +384,7 @@ class RoomAreaItem {
     }
     double motiveArea = motiveAreaM2;
     double areaWithWaste = motiveArea * (1 + wastePct / 100);
-    return (areaWithWaste / singleTileArea).ceil();
+    return cleanCeil(areaWithWaste / singleTileArea);
   }
 
   int getSkirtingTilesCount() {
@@ -461,7 +404,7 @@ class RoomAreaItem {
     double lArea = lightAreaM2;
     if (lArea <= 0 || singleTileArea <= 0) return 0;
     double areaWithWaste = lArea * (1 + wastePct / 100);
-    return (areaWithWaste / singleTileArea).ceil();
+    return cleanCeil(areaWithWaste / singleTileArea);
   }
 
   double get tileLengthM {
@@ -519,7 +462,7 @@ class RoomAreaItem {
       linearMetersPerTile = tileLengthM;
     }
 
-    return (netSkirtingPerimeterM / linearMetersPerTile).ceil();
+    return cleanCeil(netSkirtingPerimeterM / linearMetersPerTile);
   }
 
   void dispose() {
@@ -530,10 +473,6 @@ class RoomAreaItem {
     wallHeightController.dispose();
     openingWidthController.dispose();
     openingHeightController.dispose();
-    darkCutoutWidthController.dispose();
-    darkCutoutHeightController.dispose();
-    motiveCutoutWidthController.dispose();
-    motiveCutoutHeightController.dispose();
     tileLengthController.dispose();
     tileWidthController.dispose();
     tilesPerBoxController.dispose();
