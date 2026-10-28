@@ -39,14 +39,14 @@ class LayoutPreviewCard extends StatefulWidget {
 }
 
 class _LayoutPreviewCardState extends State<LayoutPreviewCard> {
-  double _angleX = 0.35;
-  double _angleY = -0.5;
+  double _angleX = 0.4;
+  double _angleY = -0.6;
   double _scale = 1.0;
 
   void _resetView() {
     setState(() {
-      _angleX = 0.35;
-      _angleY = -0.5;
+      _angleX = 0.4;
+      _angleY = -0.6;
       _scale = 1.0;
     });
   }
@@ -96,7 +96,7 @@ class _LayoutPreviewCardState extends State<LayoutPreviewCard> {
                               color: Color(0xFF16A34A), size: 22),
                           const SizedBox(width: 10),
                           Text(
-                            'Interactive 3D Room Box (Fullscreen)',
+                            'Interactive 3D Room Box with Tiles (Fullscreen)',
                             style: TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.bold,
@@ -128,6 +128,85 @@ class _LayoutPreviewCardState extends State<LayoutPreviewCard> {
     );
   }
 
+  Widget _buildTileGridForFace({
+    required int cols,
+    required int rows,
+    required double tileAspect,
+    required bool isWall,
+  }) {
+    double shortSide = min(widget.tileLengthM, widget.tileWidthM);
+    double darkH = widget.darkRows * shortSide;
+    double motiveH = widget.motiveRows * shortSide;
+    double skirtingH = widget.skirtingHeightM;
+
+    int maxCols = cols.clamp(1, 8);
+    int maxRows = rows.clamp(1, 8);
+
+    return ClipRect(
+      child: GridView.builder(
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: maxCols,
+          crossAxisSpacing: 1.5,
+          mainAxisSpacing: 1.5,
+          childAspectRatio: tileAspect,
+        ),
+        itemCount: maxCols * maxRows,
+        itemBuilder: (context, index) {
+          int row = index ~/ maxCols;
+          int invertedRow = (maxRows - 1) - row;
+          double currentHeightFromBottom = (invertedRow + 1) * widget.tileWidthM;
+
+          String typeLabel = 'L';
+          Color tileColor = const Color(0xFF059669);
+
+          if (isWall) {
+            if (widget.hasSkirting && currentHeightFromBottom <= skirtingH) {
+              typeLabel = 'S';
+              tileColor = const Color(0xFFD97706); // Skirting
+            } else if (widget.hasHeight && currentHeightFromBottom <= darkH) {
+              typeLabel = 'D';
+              tileColor = const Color(0xFF1E3A8A); // Dark
+            } else if (widget.hasHeight &&
+                currentHeightFromBottom > darkH &&
+                currentHeightFromBottom <= (darkH + motiveH)) {
+              typeLabel = 'M';
+              tileColor = const Color(0xFF0D9488); // Motive
+            } else {
+              typeLabel = 'L';
+              tileColor = const Color(0xFF059669); // Light
+            }
+          } else {
+            typeLabel = 'L';
+            tileColor = const Color(0xFF3B82F6); // Floor
+          }
+
+          return Container(
+            decoration: BoxDecoration(
+              color: tileColor.withValues(alpha: widget.isDark ? 0.45 : 0.35),
+              border: Border.all(
+                color: tileColor.withValues(alpha: 0.8),
+                width: 1,
+              ),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: Center(
+              child: Text(
+                typeLabel,
+                style: TextStyle(
+                  fontSize: 8,
+                  fontWeight: FontWeight.bold,
+                  color: tileColor,
+                ),
+              ),
+            ),
+          );
+        },
+      ),
+    );
+  }
+
   Widget _build3DRoomBoxContent(
       {bool isFullScreen = false, StateSetter? setDialogState}) {
     if (widget.areaMode != 'dimensions' ||
@@ -148,6 +227,20 @@ class _LayoutPreviewCardState extends State<LayoutPreviewCard> {
       );
     }
 
+    int colsL = (widget.roomLengthM / widget.tileLengthM).ceil();
+    int colsW = (widget.roomWidthM / widget.tileLengthM).ceil();
+    double verticalDim = widget.hasHeight
+        ? (widget.roomHeightM > 0
+            ? widget.roomHeightM
+            : (widget.hasSkirting ? 0.3 : widget.roomWidthM))
+        : widget.roomWidthM;
+    int rows = (verticalDim / widget.tileWidthM).ceil();
+    double tileAspect = widget.tileLengthM / widget.tileWidthM;
+
+    double bW = isFullScreen ? 280.0 : 200.0;
+    double bH = isFullScreen ? 220.0 : 160.0;
+    double bD = isFullScreen ? 280.0 : 200.0;
+
     return Listener(
       onPointerSignal: (pointerSignal) {
         if (pointerSignal is PointerScrollEvent) {
@@ -165,13 +258,13 @@ class _LayoutPreviewCardState extends State<LayoutPreviewCard> {
         onPanUpdate: (details) {
           final sState = setDialogState ?? setState;
           sState(() {
-            _angleY += details.delta.dx * 0.015;
-            _angleX -= details.delta.dy * 0.015;
-            _angleX = _angleX.clamp(-0.9, 0.9);
+            _angleY -= details.delta.dx * 0.015;
+            _angleX += details.delta.dy * 0.015;
+            _angleX = _angleX.clamp(-1.2, 1.2);
           });
         },
         child: Container(
-          height: isFullScreen ? double.infinity : 240,
+          height: isFullScreen ? double.infinity : 260,
           width: double.infinity,
           decoration: BoxDecoration(
             color: widget.isDark
@@ -197,117 +290,102 @@ class _LayoutPreviewCardState extends State<LayoutPreviewCard> {
                     ..rotateY(_angleY),
                   alignment: Alignment.center,
                   child: SizedBox(
-                    width: isFullScreen ? 260 : 180,
-                    height: isFullScreen ? 220 : 140,
+                    width: bW,
+                    height: bH,
                     child: Stack(
                       alignment: Alignment.center,
                       children: [
                         // Floor
                         Transform(
-                          transform: Matrix4.translationValues(
-                              0.0, isFullScreen ? 110.0 : 70.0, 0.0)
+                          transform: Matrix4.translationValues(0.0, bH / 2, 0.0)
                             ..rotateX(pi / 2),
                           alignment: Alignment.center,
                           child: Container(
-                            width: isFullScreen ? 260 : 180,
-                            height: isFullScreen ? 220 : 140,
+                            width: bW,
+                            height: bD,
+                            padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               color: const Color(0xFF3B82F6)
-                                  .withValues(alpha: 0.3),
+                                  .withValues(alpha: 0.25),
                               border: Border.all(
-                                  color: const Color(0xFF60A5FA), width: 2),
+                                  color: const Color(0xFF60A5FA), width: 1.5),
                             ),
-                            child: const Center(
-                              child: Text(
-                                'FLOOR',
-                                style: TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                            child: _buildTileGridForFace(
+                              cols: colsL,
+                              rows: (widget.roomWidthM / widget.tileWidthM)
+                                  .ceil(),
+                              tileAspect: tileAspect,
+                              isWall: false,
                             ),
                           ),
                         ),
                         // Back Wall
                         Transform(
-                          transform: Matrix4.translationValues(
-                              0.0, 0.0, isFullScreen ? -110.0 : -70.0),
+                          transform:
+                              Matrix4.translationValues(0.0, 0.0, -bD / 2),
                           alignment: Alignment.center,
                           child: Container(
-                            width: isFullScreen ? 260 : 180,
-                            height: isFullScreen ? 220 : 140,
+                            width: bW,
+                            height: bH,
+                            padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               color: const Color(0xFF059669)
-                                  .withValues(alpha: 0.3),
+                                  .withValues(alpha: 0.25),
                               border: Border.all(
-                                  color: const Color(0xFF10B981), width: 2),
+                                  color: const Color(0xFF10B981), width: 1.5),
                             ),
-                            child: Center(
-                              child: Text(
-                                'WALL BACK\nL: ${widget.roomLengthM.toStringAsFixed(3)}m',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 10,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                            child: _buildTileGridForFace(
+                              cols: colsL,
+                              rows: rows,
+                              tileAspect: tileAspect,
+                              isWall: true,
                             ),
                           ),
                         ),
                         // Left Wall
                         Transform(
-                          transform: Matrix4.translationValues(
-                              isFullScreen ? -130.0 : -90.0, 0.0, 0.0)
-                            ..rotateY(pi / 2),
+                          transform:
+                              Matrix4.translationValues(-bW / 2, 0.0, 0.0)
+                                ..rotateY(pi / 2),
                           alignment: Alignment.center,
                           child: Container(
-                            width: isFullScreen ? 220 : 140,
-                            height: isFullScreen ? 220 : 140,
+                            width: bD,
+                            height: bH,
+                            padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               color: const Color(0xFF0D9488)
-                                  .withValues(alpha: 0.3),
+                                  .withValues(alpha: 0.25),
                               border: Border.all(
-                                  color: const Color(0xFF2DD4BF), width: 2),
+                                  color: const Color(0xFF2DD4BF), width: 1.5),
                             ),
-                            child: Center(
-                              child: Text(
-                                'SIDE WALL\nH: ${(widget.roomHeightM > 0 ? widget.roomHeightM : widget.roomWidthM).toStringAsFixed(3)}m',
-                                textAlign: TextAlign.center,
-                                style: const TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                            child: _buildTileGridForFace(
+                              cols: colsW,
+                              rows: rows,
+                              tileAspect: tileAspect,
+                              isWall: true,
                             ),
                           ),
                         ),
                         // Right Wall
                         Transform(
-                          transform: Matrix4.translationValues(
-                              isFullScreen ? 130.0 : 90.0, 0.0, 0.0)
+                          transform: Matrix4.translationValues(bW / 2, 0.0, 0.0)
                             ..rotateY(-pi / 2),
                           alignment: Alignment.center,
                           child: Container(
-                            width: isFullScreen ? 220 : 140,
-                            height: isFullScreen ? 220 : 140,
+                            width: bD,
+                            height: bH,
+                            padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               color: const Color(0xFF8B5CF6)
-                                  .withValues(alpha: 0.3),
+                                  .withValues(alpha: 0.25),
                               border: Border.all(
-                                  color: const Color(0xFFA78BFA), width: 2),
+                                  color: const Color(0xFFA78BFA), width: 1.5),
                             ),
-                            child: const Center(
-                              child: Text(
-                                'RIGHT WALL',
-                                style: TextStyle(
-                                  fontSize: 9,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
-                                ),
-                              ),
+                            child: _buildTileGridForFace(
+                              cols: colsW,
+                              rows: rows,
+                              tileAspect: tileAspect,
+                              isWall: true,
                             ),
                           ),
                         ),
@@ -496,13 +574,13 @@ class _LayoutPreviewCardState extends State<LayoutPreviewCard> {
     );
   }
 
-  Widget _buildLegendItem(String label, Color color) {
+  Widget _buildLegendItem(String label, Color color, {double size = 10}) {
     return Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 10,
-          height: 10,
+          width: size,
+          height: size,
           decoration: BoxDecoration(
             color: color,
             borderRadius: BorderRadius.circular(3),
@@ -512,11 +590,10 @@ class _LayoutPreviewCardState extends State<LayoutPreviewCard> {
         Text(
           label,
           style: TextStyle(
-            fontSize: 10,
+            fontSize: size,
             fontWeight: FontWeight.w600,
-            color: widget.isDark
-                ? const Color(0xFF94A3B8)
-                : const Color(0xFF64748B),
+            color:
+                widget.isDark ? const Color(0xFF94A3B8) : const Color(0xFF64748B),
           ),
         ),
       ],

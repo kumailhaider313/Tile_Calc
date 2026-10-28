@@ -202,7 +202,7 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
                 crossAxisCount: 2,
                 crossAxisSpacing: 10,
                 mainAxisSpacing: 10,
-                childAspectRatio: 1.3,
+                childAspectRatio: 1.25,
               ),
               itemCount: roomTypes.length,
               itemBuilder: (context, index) {
@@ -246,39 +246,41 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
                             child: Icon(icon, color: color, size: 28),
                           ),
                           const SizedBox(height: 8),
-                          isSpecial
-                              ? RichText(
-                                  textAlign: TextAlign.center,
-                                  text: TextSpan(
+                          FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: isSpecial
+                                ? RichText(
+                                    textAlign: TextAlign.center,
+                                    text: TextSpan(
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: FontWeight.bold,
+                                        color: widget.isDarkMode
+                                            ? Colors.white
+                                            : const Color(0xFF0F172A),
+                                      ),
+                                      children: const [
+                                        TextSpan(
+                                          text: '12X24 ',
+                                          style: TextStyle(
+                                              color: Color(0xFF16A34A)),
+                                        ),
+                                        TextSpan(text: 'bathroom'),
+                                      ],
+                                    ),
+                                  )
+                                : Text(
+                                    name,
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
-                                      fontSize: 12,
+                                      fontSize: 13,
                                       fontWeight: FontWeight.bold,
                                       color: widget.isDarkMode
                                           ? Colors.white
                                           : const Color(0xFF0F172A),
                                     ),
-                                    children: const [
-                                      TextSpan(
-                                        text: '12X24\n',
-                                        style: TextStyle(
-                                            color: Color(0xFF16A34A),
-                                            fontSize: 11),
-                                      ),
-                                      TextSpan(text: 'bathroom'),
-                                    ],
                                   ),
-                                )
-                              : Text(
-                                  name,
-                                  textAlign: TextAlign.center,
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                    color: widget.isDarkMode
-                                        ? Colors.white
-                                        : const Color(0xFF0F172A),
-                                  ),
-                                ),
+                          ),
                         ],
                       ),
                     ),

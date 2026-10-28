@@ -101,7 +101,7 @@ class TileSpecsSection extends StatelessWidget {
                                   ),
                                 ),
                                 child: Text(
-                                  'Forte (12x24 in)',
+                                  'Forte',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: tileType == 'Forte'
@@ -143,7 +143,7 @@ class TileSpecsSection extends StatelessWidget {
                                   ),
                                 ),
                                 child: Text(
-                                  'China (30x60 cm)',
+                                  'China',
                                   style: TextStyle(
                                     fontSize: 12,
                                     fontWeight: tileType == 'China'
