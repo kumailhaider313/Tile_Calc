@@ -198,7 +198,7 @@ class AreaInputSection extends StatelessWidget {
                         Expanded(
                           child: buildInputFieldWithUnit(
                             isDark: isDark,
-                            label: '${activeRoom.name} Length',
+                            label: 'Length',
                             controller: activeRoom.lengthController,
                             unitValue: activeRoom.unitLength,
                             unitOptions: const ['m', 'cm', 'ft', 'in'],
@@ -215,7 +215,7 @@ class AreaInputSection extends StatelessWidget {
                         Expanded(
                           child: buildInputFieldWithUnit(
                             isDark: isDark,
-                            label: '${activeRoom.name} Width',
+                            label: 'Width',
                             controller: activeRoom.widthController,
                             unitValue: activeRoom.unitWidth,
                             unitOptions: const ['m', 'cm', 'ft', 'in'],
@@ -627,7 +627,7 @@ class AreaInputSection extends StatelessWidget {
                 )
               : buildInputFieldWithUnit(
                   isDark: isDark,
-                  label: '${activeRoom.name} Total Surface Area',
+                  label: 'Total Surface Area',
                   controller: activeRoom.directAreaController,
                   unitValue: activeRoom.unitDirectArea,
                   unitOptions: const ['m²', 'cm²', 'sq ft', 'sq in'],

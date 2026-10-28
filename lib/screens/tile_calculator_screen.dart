@@ -48,25 +48,33 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
 
   void _addNewRoom(String name,
       [String defaultL = '6.0', String defaultW = '5.0']) {
-    String tileL = '60';
-    String tileW = '60';
-    String tileUnit = 'cm';
+    String tileL = '24';
+    String tileW = '12';
+    String tileUnit = 'inch';
     String wallH = '7.0';
+    String defaultCost = '1350.00';
+    String defaultBox = '8';
+    String defaultTileType = 'Forte';
 
-    if (name.toLowerCase().contains('bathroom')) {
+    if (name.toLowerCase().contains('bathroom') ||
+        name.toLowerCase().contains('12x24 bathroom')) {
       defaultL = '8.0';
       defaultW = '6.0';
-      tileL = '6';
-      tileW = '4';
-      tileUnit = 'in';
-    } else if (name.toLowerCase().contains('room') ||
-        name.toLowerCase().contains('bedroom') ||
-        name.toLowerCase().contains('living')) {
+      tileL = '24';
+      tileW = '12';
+      tileUnit = 'inch';
+      defaultCost = '1350.00';
+      defaultBox = '8';
+      defaultTileType = 'Forte';
+    } else {
       defaultL = '12.0';
       defaultW = '10.0';
-      tileL = '12';
-      tileW = '14';
-      tileUnit = 'in';
+      tileL = '60';
+      tileW = '30';
+      tileUnit = 'cm';
+      defaultCost = '1400.00';
+      defaultBox = '8';
+      defaultTileType = 'China';
     }
 
     final lController = TextEditingController(text: defaultL);
@@ -77,8 +85,8 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
 
     final tLC = TextEditingController(text: tileL);
     final tWC = TextEditingController(text: tileW);
-    final tBoxC = TextEditingController(text: '10');
-    final costC = TextEditingController(text: '1800.00');
+    final tBoxC = TextEditingController(text: defaultBox);
+    final costC = TextEditingController(text: defaultCost);
 
     final openingWC = TextEditingController(text: '0.0');
     final openingHC = TextEditingController(text: '0.0');
@@ -135,6 +143,7 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
           motiveValue: 1,
           openingWidthController: openingWC,
           openingHeightController: openingHC,
+          tileType: defaultTileType,
         ),
       );
       _selectedRoomIndex = _rooms.length - 1;
@@ -142,67 +151,150 @@ class _TileCalculatorScreenState extends State<TileCalculatorScreen> {
   }
 
   void _showAddRoomDialog() {
-    final nameController = TextEditingController(text: 'Bathroom');
+    final List<Map<String, dynamic>> roomTypes = [
+      {
+        'name': 'Floor',
+        'icon': Icons.grid_view_rounded,
+        'color': const Color(0xFF3B82F6)
+      },
+      {
+        'name': 'Bedroom',
+        'icon': Icons.hotel_rounded,
+        'color': const Color(0xFF8B5CF6)
+      },
+      {
+        'name': 'Bathroom',
+        'icon': Icons.bathtub_rounded,
+        'color': const Color(0xFF06B6D4)
+      },
+      {
+        'name': '12X24 bathroom',
+        'icon': Icons.bathtub_rounded,
+        'color': const Color(0xFF10B981),
+        'isSpecial': true
+      },
+      {
+        'name': 'Kitchen',
+        'icon': Icons.kitchen_rounded,
+        'color': const Color(0xFFF59E0B)
+      },
+    ];
+
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
         backgroundColor:
             widget.isDarkMode ? const Color(0xFF0F172A) : Colors.white,
-        title: const Text('Add Area / Room'),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text('Enter room or area name:',
-                style: TextStyle(fontSize: 13)),
-            const SizedBox(height: 10),
-            TextField(
-              controller: nameController,
-              autofocus: true,
-              decoration: InputDecoration(
-                hintText: 'e.g. Bathroom, Kitchen, Living Room',
-                border:
-                    OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        title: const Text(
+          'Select Room / Area Type',
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
+        content: SizedBox(
+          width: 400,
+          child: SingleChildScrollView(
+            child: GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                crossAxisSpacing: 10,
+                mainAxisSpacing: 10,
+                childAspectRatio: 1.3,
               ),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                'Bathroom',
-                'Kitchen',
-                'Bedroom',
-                'Living Room',
-                'Balcony',
-                'Corridor'
-              ].map((suggestion) {
-                return ActionChip(
-                  label: Text(suggestion, style: const TextStyle(fontSize: 11)),
-                  onPressed: () {
-                    nameController.text = suggestion;
-                  },
+              itemCount: roomTypes.length,
+              itemBuilder: (context, index) {
+                final room = roomTypes[index];
+                final name = room['name'] as String;
+                final icon = room['icon'] as IconData;
+                final color = room['color'] as Color;
+                final isSpecial = room['isSpecial'] == true;
+
+                return Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () {
+                      _addNewRoom(name);
+                      Navigator.pop(ctx);
+                    },
+                    borderRadius: BorderRadius.circular(20),
+                    child: Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: widget.isDarkMode
+                            ? const Color(0xFF1E293B)
+                            : const Color(0xFFF1F5F9),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: widget.isDarkMode
+                              ? const Color(0xFF334155)
+                              : const Color(0xFFCBD5E1),
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(10),
+                            decoration: BoxDecoration(
+                              color: color.withValues(alpha: 0.18),
+                              borderRadius: BorderRadius.circular(14),
+                            ),
+                            child: Icon(icon, color: color, size: 28),
+                          ),
+                          const SizedBox(height: 8),
+                          isSpecial
+                              ? RichText(
+                                  textAlign: TextAlign.center,
+                                  text: TextSpan(
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: widget.isDarkMode
+                                          ? Colors.white
+                                          : const Color(0xFF0F172A),
+                                    ),
+                                    children: const [
+                                      TextSpan(
+                                        text: '12X24\n',
+                                        style: TextStyle(
+                                            color: Color(0xFF16A34A),
+                                            fontSize: 11),
+                                      ),
+                                      TextSpan(text: 'bathroom'),
+                                    ],
+                                  ),
+                                )
+                              : Text(
+                                  name,
+                                  textAlign: TextAlign.center,
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.bold,
+                                    color: widget.isDarkMode
+                                        ? Colors.white
+                                        : const Color(0xFF0F172A),
+                                  ),
+                                ),
+                        ],
+                      ),
+                    ),
+                  ),
                 );
-              }).toList(),
+              },
             ),
-          ],
+          ),
         ),
         actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
-          ),
-          ElevatedButton(
-            style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF16A34A)),
-            onPressed: () {
-              final name = nameController.text.trim();
-              if (name.isNotEmpty) {
-                _addNewRoom(name);
-              }
-              Navigator.pop(ctx);
-            },
-            child: const Text('Add', style: TextStyle(color: Colors.white)),
+          Center(
+            child: TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('Cancel',
+                  style: TextStyle(fontWeight: FontWeight.bold)),
+            ),
           ),
         ],
       ),
@@ -410,7 +502,7 @@ Tile Calculation Summary:
 - Areas Included: ${_rooms.map((r) => r.name).join(', ')}
 - Order Quantity: $orderQtyText
 - Total Tiles Needed: $totalTilesNeeded pcs
-- Area (with waste): ${areaWithWaste.toStringAsFixed(2)} m²
+- Area (with waste): ${areaWithWaste.toStringAsFixed(3)} m²
 - Pricing Option: ${activeRoom.costPricingMode}
 - Estimated Cost: $currencySymbol${totalCost.toStringAsFixed(2)}
 '''
@@ -554,6 +646,8 @@ Tile Calculation Summary:
         const SizedBox(height: 16),
         TileSpecsSection(
           isDark: isDark,
+          is12X24Bathroom:
+              activeRoom.name.toLowerCase().contains('12x24 bathroom'),
           tileLengthController: activeRoom.tileLengthController,
           tileWidthController: activeRoom.tileWidthController,
           tilesPerBoxController: activeRoom.tilesPerBoxController,
@@ -576,6 +670,12 @@ Tile Calculation Summary:
                 activeRoom.unitTileL = val;
               });
             }
+          },
+          tileType: activeRoom.tileType,
+          onTileTypeChanged: (type) {
+            setState(() {
+              activeRoom.setTileType(type);
+            });
           },
           currencySymbol: currencySymbol,
           costPricingMode: activeRoom.costPricingMode,

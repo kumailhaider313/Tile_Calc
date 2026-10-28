@@ -50,6 +50,7 @@ class RoomAreaItem {
   String unitTileL;
   String unitTileW;
   String costPricingMode; // 'per Box', 'per Tile', 'per m²'
+  String tileType; // 'Forte' or 'China'
 
   RoomAreaItem({
     required this.id,
@@ -81,7 +82,27 @@ class RoomAreaItem {
     this.unitTileL = 'cm',
     this.unitTileW = 'cm',
     this.costPricingMode = 'per m²',
+    this.tileType = 'Forte',
   });
+
+  void setTileType(String type) {
+    tileType = type;
+    if (type == 'Forte') {
+      tileLengthController.text = '24';
+      tileWidthController.text = '12';
+      unitTileL = 'inch';
+      unitTileW = 'inch';
+      costPerBoxController.text = '1350.0';
+      tilesPerBoxController.text = '8';
+    } else if (type == 'China') {
+      tileLengthController.text = '60';
+      tileWidthController.text = '30';
+      unitTileL = 'cm';
+      unitTileW = 'cm';
+      costPerBoxController.text = '1400.0';
+      tilesPerBoxController.text = '8';
+    }
+  }
 
   double get length => double.tryParse(lengthController.text) ?? 0.0;
   double get width => double.tryParse(widthController.text) ?? 0.0;
@@ -416,6 +437,7 @@ class RoomAreaItem {
       case 'ft':
         return tileLength * 0.3048;
       case 'in':
+      case 'inch':
         return tileLength * 0.0254;
       case 'm':
       default:
@@ -432,6 +454,7 @@ class RoomAreaItem {
       case 'ft':
         return tileWidth * 0.3048;
       case 'in':
+      case 'inch':
         return tileWidth * 0.0254;
       case 'm':
       default:

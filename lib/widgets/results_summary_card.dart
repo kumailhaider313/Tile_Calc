@@ -113,11 +113,55 @@ class ResultsSummaryCard extends StatelessWidget {
               room.singleTileArea)
           .ceil();
     }
-    int roomTotalTiles = floorT + darkT + motiveT + skirtT + wallT + lightT;
+
+    int floorBoxes = floorT > 0 ? floorT ~/ room.tilesPerBox : 0;
+    int floorLoose = floorT > 0 ? floorT % room.tilesPerBox : 0;
+
+    int darkBoxes = darkT > 0 ? darkT ~/ room.tilesPerBox : 0;
+    int darkLoose = darkT > 0 ? darkT % room.tilesPerBox : 0;
+
+    int motiveBoxes = motiveT > 0 ? motiveT ~/ room.tilesPerBox : 0;
+    int motiveLoose = motiveT > 0 ? motiveT % room.tilesPerBox : 0;
+
+    int skirtBoxes = skirtT > 0 ? skirtT ~/ room.tilesPerBox : 0;
+    int skirtLoose = skirtT > 0 ? skirtT % room.tilesPerBox : 0;
+
+    int lightBoxes = lightT > 0 ? lightT ~/ room.tilesPerBox : 0;
+    int lightLoose = lightT > 0 ? lightT % room.tilesPerBox : 0;
+
+    int wallBoxes = wallT > 0 ? wallT ~/ room.tilesPerBox : 0;
+    int wallLoose = wallT > 0 ? wallT % room.tilesPerBox : 0;
+
+    int totalBoxesSum = floorBoxes +
+        darkBoxes +
+        motiveBoxes +
+        skirtBoxes +
+        lightBoxes +
+        wallBoxes;
+    int totalTilesSum = floorLoose +
+        darkLoose +
+        motiveLoose +
+        skirtLoose +
+        lightLoose +
+        wallLoose;
+
+    String roomTotalText = '';
+    if (totalBoxesSum > 0) {
+      if (totalTilesSum > 0) {
+        roomTotalText =
+            '$totalBoxesSum Box${totalBoxesSum > 1 ? 'es' : ''} + $totalTilesSum ${totalTilesSum == 1 ? 'Tile' : 'Tiles'}';
+      } else {
+        roomTotalText = '$totalBoxesSum Box${totalBoxesSum > 1 ? 'es' : ''}';
+      }
+    } else {
+      roomTotalText = '$totalTilesSum ${totalTilesSum == 1 ? 'Tile' : 'Tiles'}';
+    }
+
     double roomArea = room.totalRoomAreaM2;
     double roomAreaWithWaste = roomArea * (1 + wastePct / 100);
 
     double roomCost = 0.0;
+    int roomTotalTiles = floorT + darkT + motiveT + skirtT + wallT + lightT;
     if (room.singleTileArea > 0) {
       int rBoxes = room.tilesPerBox > 0
           ? (roomTotalTiles / room.tilesPerBox).ceil().toInt()
@@ -195,7 +239,7 @@ class ResultsSummaryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                'Area: ${roomAreaWithWaste.toStringAsFixed(2)} m²',
+                'Area: ${roomAreaWithWaste.toStringAsFixed(3)} m²',
                 style: const TextStyle(
                   fontSize: 10,
                   color: Color(0xFFA7F3D0),
@@ -203,7 +247,7 @@ class ResultsSummaryCard extends StatelessWidget {
                 ),
               ),
               Text(
-                'Total: ${_formatTiles(roomTotalTiles, room.tilesPerBox)}',
+                'Total: $roomTotalText',
                 style: const TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.bold,
@@ -428,12 +472,12 @@ class ResultsSummaryCard extends StatelessWidget {
             children: [
               _buildMetricTile(
                 'Net Surface Area',
-                netArea.toStringAsFixed(2),
+                netArea.toStringAsFixed(3),
                 'm²',
               ),
               _buildMetricTile(
                 'Area with Waste',
-                areaWithWaste.toStringAsFixed(2),
+                areaWithWaste.toStringAsFixed(3),
                 'm²',
               ),
               _buildMetricTile(
@@ -443,17 +487,17 @@ class ResultsSummaryCard extends StatelessWidget {
               ),
               _buildMetricTile(
                 'Area of One Box',
-                boxCoverage.toStringAsFixed(2),
+                boxCoverage.toStringAsFixed(3),
                 'm²',
               ),
               _buildMetricTile(
                 'Total Tiles Area',
-                (totalTilesNeeded * singleTileArea).toStringAsFixed(2),
+                (totalTilesNeeded * singleTileArea).toStringAsFixed(3),
                 'm²',
               ),
               _buildMetricTile(
                 'Single Tile Area',
-                singleTileArea.toStringAsFixed(2),
+                singleTileArea.toStringAsFixed(3),
                 'm²',
               ),
             ],
